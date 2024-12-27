@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Notes
+{% endblock %}
+
+{% block main %}
+<div class="container">
+    <h1 class="text-center display-4">Your Books</h1>
+    <br>
+
+    <!-- Create New Book Form -->
+    <div class="mb-3">
+        <form action="/create_book" method="POST" class="d-flex">
+            <input type="text" name="book_title" class="form-control me-2" placeholder="New Book Title" required>
+            <button type="submit" class="btn btn-primary">Create Book</button>
+        </form>
+    </div>
+
+    <!-- List of Books -->
+    <div class="list-group">
+        {% for book in books %}
+        <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <a href="/book/{{ book.id }}" class="flex-grow-1">
+                {{ book.title }}
+            </a>
+            <div>
+                <a href="/edit_book/{{ book.id }}" class="btn btn-sm btn-outline-secondary me-2">Edit</a>
+                <form action="/delete_book/{{ book.id }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this book and all its contents?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Optional: Add client-side confirmation for book deletion
+    document.addEventListener('DOMContentLoaded', function() {
+        const deleteBookForms = document.querySelectorAll('form[action^="/delete_book/"]');
+        deleteBookForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const confirmed = confirm('Are you sure you want to delete this book and all its contents? This action cannot be undone.');
+                if (!confirmed) {
+                    e.preventDefault();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

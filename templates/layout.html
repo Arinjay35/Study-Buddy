@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="initial-scale=1, width=device-width">
+        <link href='https://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet'>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/99/three.min.js'></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script>
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        backgroundColor: {
+                            'github-dark-primary': '#0d1117',
+                            'github-dark-secondary': '#161b22',
+                            'github-dark-tertiary': '#21262d'
+                        },
+                        textColor: {
+                            'github-dark-primary': '#c9d1d9',
+                            'github-dark-secondary': '#8b949e'
+                        }
+                    }
+                }
+            }
+        </script>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/froala-editor/4.3.1/css/froala_editor.pkgd.css" integrity="sha512-KTJZ9rgdhONHSjRGYDshhr7nx0sJzaUGeXRnbU0448LyDw4ECHaZGnni6i51G0jotFkfx5RLa4a7H05BH1tRyQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/froala-editor/4.3.1/js/froala_editor.pkgd.min.js" integrity="sha512-YzvgUBEAE1xnIRh7+RR3ouUzo3WVHGoJrTPTdittmlB/2h3uMS7zhGFbn+wj4utQltjkqNPN8Jz5UDJS9Uv70w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <link href="/static/styles.css" rel="stylesheet">
+
+        <title>Study Buddy: {% block title %}{% endblock %}</title>
+        <style>
+            @keyframes pulse {
+                0% {
+                    transform: scale(1);
+                }
+
+                50% {
+                    transform: scale(1.05);
+                }
+
+                100% {
+                    transform: scale(1);
+                }
+            }
+
+            .info-modal {
+                display: none;
+                position: absolute;
+                z-index: 10;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                margin-bottom: 0.5rem;
+                background-color: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 0.5rem;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                padding: 1rem;
+                width: 16rem;
+                text-align: center;
+            }
+
+            .info-container:hover .info-modal {
+                display: block;
+            }
+
+            .modal-overlay {
+                background-color: rgba(0, 0, 0, 0.5);
+                display: flex;
+                font-size: 14px;
+                justify-content: center;
+                align-items: center;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 1000;
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.3s ease, visibility 0.3s ease;
+                overflow: auto;
+            }
+
+            .modal-overlay.show {
+                opacity: 1;
+                visibility: visible;
+            }
+
+            .modal-content {
+                background-color: white;
+                border-radius: 12px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                max-width: 500px;
+                width: 100%;
+                padding: 24px;
+                transform: translateY(-50px);
+                transition: transform 0.3s ease;
+                overflow: auto;
+            }
+
+            .modal-overlay.show .modal-content {
+                transform: translateY(0);
+            }
+        </style>
+    </head>
+
+    <body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+        <nav class="bg-gray-100 dark:bg-gray-800 shadow-sm">
+            <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+                <a href="/" class="text-xl font-bold">
+                    <span class="text-blue-500">Stu</span><span class="text-red-500">dy</span> <span class="text-yellow-500">Bud</span><span class="text-green-500">dy</span>
+                </a>
+                <div class="flex items-center space-x-4">
+                    {% if session["user_id"] %}
+                        <a href="/notes" class="text-gray-700 dark:text-gray-300 hover:text-blue-600">Notes</a>
+                        {% if session.get("game") == None or session.get("gametime", 0) == 0 %}
+                            <a href="/store" class="text-gray-700 dark:text-gray-300 hover:text-green-600">Store</a>
+                        {% endif %}
+                        <a href="/study_history" class="text-gray-700 dark:text-gray-300 hover:text-blue-600">Study History</a>
+                        <a href="/change" class="text-gray-700 dark:text-gray-300 hover:text-blue-600">Change Password</a>
+                        <a href="/logout" class="text-gray-700 dark:text-gray-300 hover:text-red-600">Log Out</a>
+                    {% else %}
+                        <a href="/register" class="text-gray-700 dark:text-gray-300 hover:text-green-600">Register</a>
+                        <a href="/login" class="text-gray-700 dark:text-gray-300 hover:text-blue-600">Log In</a>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+
+        {% if get_flashed_messages() %}
+            <div class="bg-blue-100 text-blue-800 text-center py-2">
+                {{ get_flashed_messages() | join(" ") }}
+            </div>
+        {% endif %}
+
+        <main class="container mx-auto px-4 py-8 text-center">
+            {% block main %}{% endblock %}
+        </main>
+
+        <br>
+        {% if session["user_id"] %}
+            <div id="study-session-controls" class="flex justify-center items-center space-x-4 mb-4 relative">
+            <!-- Start Study Session Button -->
+                <button id="start-study-session" class="transition-all duration-300 ease-in-out transform hover:scale-105 bg-green-500 text-white px-6 py-3 rounded-full shadow-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50">
+                    <span class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Start Study Session
+                    </span>
+                </button>
+
+            <!-- End Study Session Button -->
+                <button id="end-study-session" class="transition-all duration-300 ease-in-out transform hover:scale-105 bg-red-500 text-white px-6 py-3 rounded-full shadow-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50" disabled>
+                    <span class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        End Study Session
+                    </span>
+                </button>
+
+            <!-- Info Button with Hover Modal -->
+                <div class="info-container relative group">
+                    <button class="text-blue-500 hover:text-blue-700 transition-colors duration-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </button>
+
+                <!-- Hover Modal -->
+                    <div class="info-modal text-sm">
+                        <p class="font-semibold mb-2">Study Sessions</p>
+                        <p class="text-gray-600">
+                            Start a Study session to track the time you spent studying and the amount of tasks done.
+                            Begin by clicking the "Start Study Session" button, and end
+                            your session and be presented with a modal of your study session information.
+                            You can check the study history page for a history of your study sessions and for other valuable info.
+                            For your notes to be summarised properly wait for atleast 6 seconds after saving your notes before ending the study session.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div id="time-tracker" class="fixed bottom-0 left-0 right-0 text-center z-50 bg-white/50 dark:bg-black/50 backdrop-blur-sm p-3 flex items-center justify-center space-x-4 text-lg shadow-lg" style="display: none;">
+                <script>
+                    document.addEventListener('DOMContentLoaded', () => {
+                        const tracker = document.getElementById('time-tracker');
+                        const timeDisplay = document.createElement('span');
+                        timeDisplay.className = 'text-2xl font-bold font-mono text-gray-800 dark:text-gray-200';
+
+                        const timerIcon = document.createElement('span');
+                        timerIcon.innerHTML = '⏱️';
+                        tracker.insertBefore(timerIcon, tracker.firstChild);
+
+                        tracker.appendChild(timeDisplay);
+
+                        const startSessionBtn = document.getElementById('start-study-session');
+                        const endSessionBtn = document.getElementById('end-study-session');
+
+                    // Create modal explicitly outside the other functions to ensure it's always accessible
+                        const modalOverlay = document.createElement('div');
+                        modalOverlay.id = 'study-session-modal';
+                        modalOverlay.className = 'modal-overlay';
+                        modalOverlay.setAttribute('aria-modal', 'true');
+                        modalOverlay.setAttribute('role', 'dialog');
+                        modalOverlay.style.display = 'none'; // Initially hidden
+
+                        const modalContent = document.createElement('div');
+                        modalContent.className = 'modal-content';
+                        modalContent.innerHTML = `
+        <h2 class="text-2xl font-bold text-center text-gray-800">Study Session Summary</h2>
+        <div id="session-details">
+            <div class="flex justify-between mb-2 mt-1">
+                <strong class="text-gray-700">Time Spent:</strong>
+                <span id="modal-time-spent" class="text-green-600 font-mono"></span>
+            </div>
+            <div class="mt-1">
+                <h3 class="text-gray-700 font-bold">Completed Tasks:</h3>
+                <ul id="modal-completed-tasks" class="list-disc pl-5 text-gray-600"></ul>
+            </div>
+            <div class="mt-1">
+                <h3 class="text-gray-700 font-bold">Notes Summary:</h3>
+                <ul id="modal-notes-summary" class="list-disc pl-5 text-gray-600"></ul>
+            </div>
+        </div>
+        <div class="flex justify-center">
+            <button id="close-modal" class="bg-blue-500 text-white px-6 py-2 rounded-full hover:bg-blue-600 transition-colors">Close</button>
+        </div>
+    `;
+
+                        modalOverlay.appendChild(modalContent);
+                        document.body.appendChild(modalOverlay);
+
+                        const timeSpentSpan = modalOverlay.querySelector('#modal-time-spent');
+                        const completedTasksList = modalOverlay.querySelector('#modal-completed-tasks');
+                        const completedNotesList = modalOverlay.querySelector('#modal-notes-summary');
+                        const closeModalBtn = modalOverlay.querySelector('#close-modal');
+
+                        let startTime = null;
+                        let seconds = 0;
+                        let studySessionInterval = null;
+                        let studySessionRunning = false;
+
+                    // Modal show and hide functions
+                        function showModal() {
+                            modalOverlay.style.display = 'flex';
+                            setTimeout(() => {
+                                modalOverlay.classList.add('show');
+                            }, 10);
+                        }
+
+                        function hideModal() {
+                            modalOverlay.classList.remove('show');
+                            setTimeout(() => {
+                                modalOverlay.style.display = 'none';
+                            }, 300);
+                        }
+
+                    // Close modal events
+                        modalOverlay.addEventListener('click', (e) => {
+                            if (e.target === modalOverlay) {
+                                hideModal();
+                            }
+                        });
+
+                        closeModalBtn.addEventListener('click', hideModal);
+
+                        document.addEventListener('keydown', (e) => {
+                            if (e.key === 'Escape' && modalOverlay.classList.contains('show')) {
+                                hideModal();
+                            }
+                        });
+
+                    // Function to check if session should resume
+                        function shouldResumeSession() {
+                            const sessionStartTime = localStorage.getItem('studySessionStartTime');
+                            if (!sessionStartTime) return false;
+
+                            const currentTime = new Date().getTime();
+                            const sessionStart = new Date(sessionStartTime).getTime();
+                            const timeDifference = currentTime - sessionStart;
+                            const twelveHoursInMilliseconds = 12 * 60 * 60 * 1000;
+
+                            return timeDifference < twelveHoursInMilliseconds;
+                        }
+
+                    // Function to update time display
+                        function updateTimeDisplay() {
+                            const hours = Math.floor(seconds / 3600);
+                            const minutes = Math.floor((seconds % 3600) / 60);
+                            const secs = seconds % 60;
+                            timeDisplay.textContent = `${
+            hours.toString().padStart(2, '0')
+        }:${
+            minutes.toString().padStart(2, '0')
+        }:${
+            secs.toString().padStart(2, '0')
+        }`;
+                        }
+
+                    // Function to start session timer
+                        function startSessionTimer() {
+                            studySessionInterval = setInterval(() => {
+                                seconds++;
+                                localStorage.setItem('sessionTime', seconds.toString());
+                                updateTimeDisplay();
+                            }, 1000);
+                        }
+
+                    // Function to resume session
+                        function resumeSession() {
+                            const savedSeconds = parseInt(localStorage.getItem('sessionTime') || '0');
+                            const sessionStartTime = localStorage.getItem('studySessionStartTime');
+
+                            if (sessionStartTime && shouldResumeSession()) {
+                                studySessionRunning = true;
+                                startTime = sessionStartTime;
+                                seconds = savedSeconds;
+                                tracker.style.display = 'flex';
+                                startSessionBtn.disabled = true;
+                                endSessionBtn.disabled = false;
+
+                            // Update time display
+                                updateTimeDisplay();
+
+                            // Start interval
+                                startSessionTimer();
+                            }
+                        }
+
+                    // Start session button handler
+                        startSessionBtn.addEventListener('click', () => {
+                            if (!studySessionRunning) {
+                                studySessionRunning = true;
+                                seconds = 0;
+                                startTime = new Date().toISOString();
+                                tracker.style.display = 'flex';
+                                startSessionBtn.disabled = true;
+                                endSessionBtn.disabled = false;
+
+                            // Persist session state in localStorage
+                                localStorage.setItem('studySessionActive', 'true');
+                                localStorage.setItem('studySessionStartTime', startTime);
+                                localStorage.removeItem('studySessionCompletedTasks');
+                                localStorage.removeItem('studySessionNotes');
+
+                                startSessionTimer();
+                            }
+                        });
+
+                    // End session button handler
+                        endSessionBtn.addEventListener('click', async () => {
+                            if (studySessionRunning) {
+                                studySessionRunning = false;
+                                clearInterval(studySessionInterval);
+                                tracker.style.display = 'none';
+                                startSessionBtn.disabled = false;
+                                endSessionBtn.disabled = true;
+
+                                const endTime = new Date().toISOString();
+                                const allCompletedTasks = JSON.parse(localStorage.getItem('studySessionCompletedTasks') || '[]');
+                                const sessionCompletedTasks = allCompletedTasks
+                                    .filter(task => task.completedAt >= new Date(startTime).getTime())
+                                    .map(task => task.name);
+                                const allNotes = JSON.parse(localStorage.getItem('studySessionNotes') || '[]');
+                                const sessionNotes = allNotes
+                                    .filter(note => note.createdAt >= new Date(startTime).getTime())
+                                    .map(note => note.content);
+
+                                const sessionData = {
+                                    session_start: startTime,
+                                    session_end: endTime,
+                                    time_spent: seconds,
+                                    completed_tasks: sessionCompletedTasks,
+                                    completed_notes: sessionNotes,
+                                };
+
+                                try {
+                                    const response = await fetch('/save_study_session', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify(sessionData),
+                                    });
+
+                                    if (!response.ok) {
+                                        const errorText = await response.text();
+                                        console.error(`Server response error (${response.status}):`, errorText);
+                                        throw new Error(`Server error: ${response.status} - ${errorText}`);
+                                    }
+
+                                    const result = await response.json();
+                                    console.log('Study session saved successfully:', result);
+                                } catch (error) {
+                                    console.error('Failed to save study session:', error);
+                                }
+
+                            // Update modal
+                                timeSpentSpan.textContent = timeDisplay.textContent;
+                                completedTasksList.innerHTML = sessionCompletedTasks.length ?
+                                sessionCompletedTasks.map(task => `<li>${task}</li>`).join('') :
+                                    '<li class="text-gray-500">No tasks completed</li>';
+                                completedNotesList.innerHTML = sessionNotes.length ?
+                                sessionNotes.map(note => {
+                                    const firstLine = note.split('\n')[0];
+                                    const remainingLines = note.split('\n').slice(1).join('\n');
+                                    const firstLineFormatted = `<strong><u>${firstLine.replace(/\*\*/g, '')}</u></strong>`;
+                                    const formattedNote = remainingLines.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                                    const italicFormattedNote = formattedNote.replace(/\/\*(.*?)\*\//g, '<em>$1</em>');
+                                    const cleanFormattedNote = italicFormattedNote.replace(/\\n/g, '<br>');
+                                    const bulletFormattedNote = cleanFormattedNote.replace(/^\s*\*(.*)/gm, '• $1');
+                                    return `<div class="note-entry mb-4">
+                                        ${firstLineFormatted}<br>
+                                        <ul><li>${bulletFormattedNote.replace(/([^\n]+)/g, '</li><li>$1')}</li></ul>
+                                    </div>`;
+                                }).join('') :
+                                '<li class="text-gray-500">No notes saved</li>';
+
+                                showModal();
+
+                                timeDisplay.textContent = '00:00:00';
+                                seconds = 0;
+                                localStorage.removeItem('sessionTime');
+                                localStorage.removeItem('studySessionStartTime');
+                                localStorage.removeItem('studySessionCompletedTasks');
+                                localStorage.removeItem('studySessionNotes');
+                                localStorage.removeItem('studySessionActive');
+                            }
+                        });
+
+                    // Check and resume session on page load
+                        resumeSession();
+
+                    // Optional: Listen for storage events to sync across tabs
+                        window.addEventListener('storage', (event) => {
+                            if (event.key === 'studySessionActive' && event.newValue === 'true') {
+                                resumeSession();
+                            }
+                        });
+                    });
+
+                    function recordCompletedTask(taskElement) {
+                        const taskName = taskElement.textContent.trim();
+                        let completedTasks = JSON.parse(localStorage.getItem('studySessionCompletedTasks') || '[]');
+
+                        if (!completedTasks.some(task => task.name === taskName)) {
+                            completedTasks.push({
+                                name: taskName,
+                                completedAt: Date.now(),
+                            });
+                            localStorage.setItem('studySessionCompletedTasks', JSON.stringify(completedTasks));
+                        }
+                    }
+
+                    async function recordNote(content, id) {
+                        console.log('Starting recordNote function with content:', content, 'and id:', id);
+
+                        // Set pending state in localStorage
+                        const pendingKey = `pending_summary_${id}`;
+                        localStorage.setItem(pendingKey, JSON.stringify({
+                            content: content,
+                            timestamp: Date.now()
+                        }));
+
+                        try {
+                            const response = await fetch('/summarize', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    text: content.trim()
+                                })
+                            });
+
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                console.error('Error from server:', errorData);
+                                localStorage.removeItem(pendingKey);
+                                throw new Error(errorData.details || 'Failed to generate summary');
+                            }
+
+                            const data = await response.json();
+                            let noteText = data.summary;
+
+                            // Remove pending state
+                            localStorage.removeItem(pendingKey);
+
+                            let sessionNotes;
+                            try {
+                                const storedData = localStorage.getItem('studySessionNotes');
+                                sessionNotes = storedData ? JSON.parse(storedData) : [];
+                            } catch (error) {
+                                console.error('Failed to parse session notes:', error);
+                                sessionNotes = [];
+                            }
+
+                            if (!Array.isArray(sessionNotes)) {
+                                sessionNotes = [];
+                            }
+
+                            const existingNoteIndex = sessionNotes.findIndex(note => note.id === id);
+
+                            if (existingNoteIndex !== -1) {
+                                sessionNotes[existingNoteIndex].content = noteText;
+                                sessionNotes[existingNoteIndex].updatedAt = Date.now();
+                            } else {
+                                sessionNotes.push({
+                                    id: id,
+                                    content: noteText,
+                                    createdAt: Date.now(),
+                                });
+                            }
+
+                            localStorage.setItem('studySessionNotes', JSON.stringify(sessionNotes));
+                            console.log('Note recorded successfully');
+
+                        } catch (error) {
+                            console.error('Failed to record note:', error);
+                            localStorage.removeItem(pendingKey);
+                            throw error;
+                        }
+                    }
+
+                    // Function to check and resume pending summaries
+                    function checkPendingSummaries() {
+                        for (let i = 0; i < localStorage.length; i++) {
+                            const key = localStorage.key(i);
+                            if (key.startsWith('pending_summary_')) {
+                                try {
+                                    const pendingData = JSON.parse(localStorage.getItem(key));
+                                    const id = key.replace('pending_summary_', '');
+
+                                    // Check if the pending summary is not too old (e.g., 5 minutes)
+                                    const twelveHours = 12 * 60 * 60 * 1000;
+                                    if (Date.now() - pendingData.timestamp < twelveHours) {
+                                        console.log('Resuming pending summary for:', id);
+                                        recordNote(pendingData.content, id);
+                                    } else {
+                                        // Remove stale pending state
+                                        localStorage.removeItem(key);
+                                    }
+                                } catch (error) {
+                                    console.error('Error processing pending summary:', error);
+                                    localStorage.removeItem(key);
+                                }
+                            }
+                        }
+                    }
+                    document.addEventListener('DOMContentLoaded', checkPendingSummaries);
+                </script>
+        {% endif %}
+    </body>
+
+</html>

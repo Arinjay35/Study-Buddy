@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    {{ book.title }}
+{% endblock %}
+
+{% block main %}
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item text-center display-6"><a href="/notes">Books</a></li>
+            <li class="breadcrumb-item text-center display-6 active" aria-current="page">{{ book.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>{{ book.title }}</h1>
+        <div>
+            <a href="/edit_book/{{ book.id }}" class="btn btn-sm btn-outline-secondary me-2">Edit Book</a>
+            <form action="/delete_book/{{ book.id }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this book and all its contents?');">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Delete Book</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Page Form -->
+    <form action="/add_page" method="POST" class="mb-3 d-flex">
+        <input type="hidden" name="book_id" value="{{ book.id }}">
+        <input type="text" name="page_title" class="form-control me-2" placeholder="New Page Title" required>
+        <button type="submit" class="btn btn-primary">Add Page</button>
+    </form>
+
+    <!-- List of Pages -->
+    <div class="list-group">
+        {% for page in pages %}
+        <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <a href="/page/{{ page.id }}" class="flex-grow-1">
+                {{ page.title }}
+            </a>
+            <div>
+                <form action="/delete_page/{{ page.id }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this page and its subnotes?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const deletePageForms = document.querySelectorAll('form[action^="/delete_page/"]');
+        deletePageForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const confirmed = confirm('Are you sure you want to delete this page and its subnotes? This action cannot be undone.');
+                if (!confirmed) {
+                    e.preventDefault();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

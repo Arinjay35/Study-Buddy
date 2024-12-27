@@ -1,0 +1,3101 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Dashboard
+{% endblock %}
+
+{% block main %}
+    <div class="placeholder"></div>
+    <script type="text/babel" src="{{ url_for('static', filename='js/MusicPlayer.js') }}"></script>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="display: none;">
+        <strong>Game Over&nbsp;&nbsp;</strong>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('gameOver') === '1') {
+                displayGameOver();
+            }
+
+            document.querySelector('.alert').addEventListener('click', () => {
+                const alertDiv = document.querySelector('.alert');
+                if (alertDiv) {
+                    alertDiv.style.display = "none";
+                }
+                localStorage.setItem('gameOver', '0');
+            });
+        });
+
+        function displayGameOver() {
+            document.querySelector('.alert').style.display = "block";
+            localStorage.setItem('gameOver', '0');
+        }
+    </script>
+    <div class="card" style="position: sticky; width: 9%; float: right; z-index: 2000; top: 10px;">Cash: {{ cash }}</div>
+    <div class="container mt-5">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-list-task me-2"></i>To-Do List
+                        </h5>
+                        <div>
+                            <script>
+                                document.addEventListener('DOMContentLoaded', () => {
+                                    const infoBtn = document.getElementById('info-btn2');
+                                    const infoModal = document.getElementById('info-modal2');
+
+                                    infoBtn.addEventListener('mouseenter', () => {
+                                        infoModal.style.display = 'block';
+                                    });
+
+                                    infoBtn.addEventListener('mouseleave', () => {
+                                        infoModal.style.display = 'none';
+                                    });
+                                });
+                            </script>
+                            <button id="info-btn2" style="position: absolute; padding: 0px; bottom: 38px; right: 467px;" class="bi bi-info-circle text-primary ms-2">
+                                ⓘ
+                            </button>
+                            <div id="info-modal2" class="bg-light border p-2 rounded shadow-sm" style="position: absolute; top: 40px; right: 300px; z-index: 10; width: 300px; display: none;">
+                                <p class="m-0">
+                                    <div class='text-start'><strong>Usage:</strong><br>• Set tasks by clicking the blue button<br>• Get cash by completing tasks based on the priority (timed tasks give more cash) (cash can be used to buy games at the store)<br><strong>Important Tips:</strong><br>• You can use non timer tasks by leaving the timer field empty or inputting 0<br>• Do not reload the page after you run the timed task, the timer will end</div>
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button" id="addTaskBtn" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+
+                        <div id="newTaskContainer" class="mb-3" style="display: none;">
+                            <div class="input-group mb-3">
+                                <input type="text" id="newTaskInput" class="form-control" placeholder="Enter a new task">
+                                <select id="taskPriority" class="form-select">
+                                    <option value="1">Red (High Priority)</option>
+                                    <option value="2">Orange (Medium Priority)</option>
+                                    <option value="3" selected>Yellow (Low Priority)</option>
+                                </select>
+                                <input type="number" id="taskTimer" class="form-control" placeholder="Timer (min)" min="1" style="max-width: 120px;">
+                                <button type="button" class="btn btn-primary" id="submitTaskBtn">Add</button>
+                            </div>
+                        </div>
+                        <ul id="taskList" class="list-group">
+                            {% for task in tasks %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center
+                                           {% if task.completed %} text-bg-success
+                                           {% elif task.priority == 1 %} text-bg-danger
+                                           {% elif task.priority == 2 %} text-bg-warning
+                                           {% elif task.priority == 3 %} text-bg-light
+                                           {% endif %}" data-task-timer="{{ task.timer or '' }}">
+                                    <span class="{% if task.completed %}text-decoration-line-through{% endif %}">
+                                        {{ task.text }}
+                                        {% if task.timer %}
+                                            <small class="text-muted ms-2">(Timer: {{ task.timer }} min)</small>
+                                        {% endif %}
+                                    </span>
+                                    <div>
+                                        <span class="timer-countdown me-2" data-task-id="{{ task.task_id }}"></span>
+                                        <button type="button" class="btn btn-sm btn-success task-complete-btn me-2" data-task-id="{{ task.task_id }}">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger task-delete-btn" data-task-id="{{ task.task_id }}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 id="pomodoro-title" class="card-title mb-0">
+                            <i class="bi bi-stopwatch me-2"></i>Pomodoro Timer
+                        </h5>
+                        <div style="position: relative;">
+                            <script>
+                                document.addEventListener('DOMContentLoaded', () => {
+                                    const infoBtn = document.getElementById('info-btn');
+                                    const infoModal = document.getElementById('info-modal');
+
+                                    infoBtn.addEventListener('mouseenter', () => {
+                                        infoModal.style.display = 'block';
+                                    });
+
+                                    infoBtn.addEventListener('mouseleave', () => {
+                                        infoModal.style.display = 'none';
+                                    });
+                                });
+                            </script>
+                            <button id="info-btn" style="position: relative; padding: 0px; top: 0px; right: 175px; z-index: 10" class="bi bi-info-circle text-primary ms-2">
+                                ⓘ
+                            </button>
+                            <div id="info-modal" class="bg-light border p-2 rounded shadow-sm" style="position: absolute; top: 40px; right: 0px; z-index: 10; width: 300px; display: none;">
+                                <p class="m-0">
+                                    <div class='text-start'><strong>Important Tips:</strong><br>• Timer is saved across reloads and continues running even if on another webpage on the website<br>• The alarm sound WILL NOT play if you are on another webpage on the website<br>• Keeping this page open and then opening another tab for the other webpage you want to access in the page is a solution</div>
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button" id="reset-pomodoro-btn" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="pomodoro-duration" class="form-label">Pomodoro Duration (minutes):</label>
+                            <input type="number" class="form-control" id="pomodoro-duration" value="25">
+                        </div>
+                        <div class="mb-3">
+                            <label for="break-duration" class="form-label">Break Duration (minutes):</label>
+                            <input type="number" class="form-control" id="break-duration" value="10">
+                        </div>
+                        <div id="pomodoro-timer" class="display-4 text-center mb-4">25:00</div>
+                        <div class="d-flex justify-content-around">
+                            <button type="button" id="start-pomodoro-btn" class="btn btn-sm btn-outline-primary">Start Pomodoro</button>
+                            <button type="button" id="pause-pomodoro-btn" class="btn btn-sm btn-outline-secondary" style="display: none;">Pause Pomodoro</button>
+                            <button type="button" id="start-break-btn" class="btn btn-sm btn-outline-success">Start Break</button>
+                            <button type="button" id="pause-break-btn" class="btn btn-sm btn-outline-secondary" style="display: none;">Pause Break</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-calendar-event me-2"></i>Upcoming Events
+                            </h5>
+                            <div style="position: relative;">
+                                <script>
+                                    document.addEventListener('DOMContentLoaded', () => {
+                                        const infoBtn = document.getElementById('info-btn3');
+                                        const infoModal = document.getElementById('info-modal3');
+
+                                        infoBtn.addEventListener('mouseenter', () => {
+                                            infoModal.style.display = 'block';
+                                        });
+
+                                        infoBtn.addEventListener('mouseleave', () => {
+                                            infoModal.style.display = 'none';
+                                        });
+                                    });
+                                </script>
+                                <button id="info-btn3" style="position: relative; padding: 0px; top: 0px; right: 452px; z-index: 10" class="bi bi-info-circle text-primary ms-2">
+                                    ⓘ
+                                </button>
+                                <div id="info-modal3" class="bg-light border p-2 rounded shadow-sm" style="position: absolute; top: 40px; right: 300px; z-index: 10; width: 300px; display: none;">
+                                    <p class="m-0">
+                                        <div class='text-start'><strong>Usage:</strong><br>• Click the add event button to add an event on the calender, when the event arrives a green banner will be displayed along with a alarm playing both of which can be dismissed<br>• All day events can also be made which display the green banner for the entirety of the day (dismissable ofc)<br>• The alarm sound and green banner WILL NOT display if on another page on the website</div>
+                                    </p>
+                                </div>
+                            </div>
+                            <a href="/add_event" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-plus"></i> Add Event
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <ul id="upcoming-events-list" class="list-group">
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-12">
+                <div style="position: relative;">
+                    <script>
+                        document.addEventListener('DOMContentLoaded', () => {
+                            const infoBtn = document.getElementById('info-btn4');
+                            const infoModal = document.getElementById('info-modal4');
+
+                            infoBtn.addEventListener('mouseenter', () => {
+                                infoModal.style.display = 'block';
+                            });
+
+                            infoBtn.addEventListener('mouseleave', () => {
+                                infoModal.style.display = 'none';
+                            });
+                        });
+                    </script>
+                    <button id="info-btn4" style="position: relative; padding: 0px; top: 31px; right: 475px; z-index: 2" class="bi bi-info-circle text-primary ms-2">
+                        ⓘ
+                    </button>
+                    <div id="info-modal4" class="bg-light border p-2 rounded shadow-sm" style="position: absolute; top: 40px; right: 740px; z-index: 10; width: 300px; display: none;">
+                        <p class="m-0">
+                            <div class='text-start'><strong>Usage:</strong><br>• Play music without the distractivenesss of spotify, yt music, etc<br>• Play calming and focus-inducing brown noise or binaural beats or you can import your own music and play it</div>
+                        </p>
+                    </div>
+                </div>
+                <div id="music-player"></div>
+            </div>
+        </div>
+    </div>
+    <div id="chatbot-container">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-chatbot me-2"></i>Mr. Mind
+                </h5>
+                <div style="position: relative;">
+                    <script>
+                        document.addEventListener('DOMContentLoaded', () => {
+                            const infoBtn = document.getElementById('info-btn5');
+                            const infoModal = document.getElementById('info-modal5');
+
+                            infoBtn.addEventListener('mouseenter', () => {
+                                infoModal.style.display = 'block';
+                            });
+
+                            infoBtn.addEventListener('mouseleave', () => {
+                                infoModal.style.display = 'none';
+                            });
+                        });
+                    </script>
+                    <button id="info-btn5" class="bi bi-info-circle text-primary ms-2" style="padding: 0; z-index: 5;">
+                        ⓘ
+                    </button>
+                    <div id="info-modal5" class="bg-light border p-2 rounded shadow-sm" style="position: absolute; top: 40px; right: 100; z-index: 10; width: 300px; display: none;">
+                        <p class="m-0">
+                            <div class="text-start">
+                                <strong>Info:</strong><br>• Your Friendly AI Teacher/Helper who will try his best to teach, help and guide you
+                            </div>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div id="chat-messages" style="height: 400px; overflow-y: auto; padding: 10px;"></div>
+            <div class="input-area d-flex">
+                <input type="text" id="user-input" class="form-control" placeholder="Ask a study question...">
+                <button class="btn btn-primary ms-2" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('search-btn').addEventListener('click', performSearch);
+        document.getElementById('search-input').addEventListener('keypress', function(e) {
+            if (e.key == 'Enter') {
+                performSearch();
+            }
+        });
+
+        function performSearch() {
+            const searchInput = document.getElementById('search-input');
+            const searchResultsContainer = document.getElementById('search-results');
+            const query = searchInput.value.trim();
+
+            if (!query) return;
+
+            searchResultsContainer.innerHTML = '<p>Searching...</p>';
+
+            fetch('/google_search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: query
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        searchResultsContainer.innerHTML = '<p class="text-danger">Error: ${data.error}</p>';
+                        return
+                    }
+
+                    const resultsHTML = data.results.map(result => `
+                    <div class="search-result mb-3 p-3 border rounded">
+                        <h5><a href="${result.link}" target="_blank">${result.title}</a></h5>
+                        <p class="muted">${result.description}</p>
+                        <small class="text-truncate d-block">${result.link}</small>
+                    </div>
+                `).join('');
+
+                    searchResultsContainer.innerHTML = resultsHTML;
+                })
+                .catch(error => {
+                    console.error('Search error: ', error);
+                    searchResultsContainer.innerHTML = `<p class="text-danger">Network error. Please try again.</p>`;
+                });
+        }
+    </script>
+    <style>
+        #search-results .search-result {
+            background-color: #f8f9fa;
+
+        }
+
+        #search-results .search-result a {
+            color: #0066c0;
+            text-decoration: none;
+        }
+
+        #search-results .search-result a:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <script>
+        function sendMessage() {
+            const userInput = document.getElementById('user-input');
+            const messageContainer = document.getElementById('chat-messages');
+            const message = userInput.value.trim();
+
+            if (!message) return;
+
+            messageContainer.innerHTML += `<div class="user-message">${message}</div>`;
+
+            fetch('/chatbot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message
+                })
+            })
+                .then(response => {
+                    console.log('Response status:', response.status);
+
+                    if (response.status === 500) {
+                        return response.json().then(errorData => {
+                            throw new Error(errorData.details || errorData.error || 'Server error');
+                        });
+                    }
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    messageContainer.innerHTML += `<div class="ai-message">${data.response}</div>`;
+                })
+                .catch(error => {
+                    console.error('Detailed error:', error);
+                    messageContainer.innerHTML += `<div class="error-message">Error: ${error.message}</div>`;
+                });
+        }
+    </script>
+
+    <style>
+        #chatbot-container {
+            max-width: 500px;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 10px;
+            background-color: #f1f1f1;
+        }
+
+        #user-input {
+            flex-grow: 1;
+            margin-right: 10px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .user-message,
+        .ai-message,
+        .error-message {
+            max-width: 80%;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: #007bff;
+            color: white;
+            margin-left: auto;
+        }
+
+        .ai-message {
+            align-self: flex-start;
+            background-color: #f1f1f1;
+            color: black;
+            margin-right: auto;
+        }
+
+        .error-message {
+            background-color: #dc3545;
+            color: white;
+            text-align: center;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let pomodoroInterval;
+            let breakInterval;
+            let pomodoroDuration = 25 * 60;
+            let breakDuration = 10 * 60;
+            let isPomodoroRunning = false;
+            let isBreakRunning = false;
+            let pausedPomodoroTime = 0;
+            let pausedBreakTime = 0;
+            let initialPomodoroDuration = 25 * 60;
+            let initialBreakDuration = 10 * 60;
+            const notificationSound = new Audio('/static/notify.wav');
+            const POMODORO_STATE_KEY = 'pomodoroState';
+
+            function savePomodoroState() {
+                const state = {
+                    pomodoroDuration,
+                    breakDuration,
+                    isPomodoroRunning,
+                    isBreakRunning,
+                    pausedPomodoroTime,
+                    pausedBreakTime,
+                };
+                localStorage.setItem(POMODORO_STATE_KEY, JSON.stringify(state));
+            }
+
+            function loadPomodoroState() {
+                const savedState = localStorage.getItem(POMODORO_STATE_KEY);
+                if (savedState) {
+                    const state = JSON.parse(savedState);
+                    pomodoroDuration = state.pomodoroDuration;
+                    breakDuration = state.breakDuration;
+                    isPomodoroRunning = state.isPomodoroRunning;
+                    isBreakRunning = state.isBreakRunning;
+                    pausedPomodoroTime = state.pausedPomodoroTime;
+                    pausedBreakTime = state.pausedBreakTime;
+
+                    if (isPomodoroRunning || isBreakRunning) {
+                        startTimerFromState();
+                    }
+                }
+            }
+
+            function startTimerFromState() {
+                updateButtonStates();
+                if (isPomodoroRunning) {
+                    pomodoroInterval = setInterval(updatePomodoroTimer, 1000);
+                } else if (isBreakRunning) {
+                    breakInterval = setInterval(updateBreakTimer, 1000);
+                }
+            }
+
+            function updateButtonStates() {
+                const startPomodoroBtn = document.getElementById('start-pomodoro-btn');
+                const pausePomodoroBtn = document.getElementById('pause-pomodoro-btn');
+                const startBreakBtn = document.getElementById('start-break-btn');
+                const pauseBreakBtn = document.getElementById('pause-break-btn');
+
+                if (isPomodoroRunning) {
+                    startPomodoroBtn.style.display = 'none';
+                    pausePomodoroBtn.style.display = 'block';
+                    startBreakBtn.style.display = 'none';
+                    pauseBreakBtn.style.display = 'none';
+                } else if (isBreakRunning) {
+                    startPomodoroBtn.style.display = 'none';
+                    pausePomodoroBtn.style.display = 'none';
+                    startBreakBtn.style.display = 'none';
+                    pauseBreakBtn.style.display = 'block';
+                } else {
+                    startPomodoroBtn.style.display = 'block';
+                    pausePomodoroBtn.style.display = 'none';
+                    startBreakBtn.style.display = 'block';
+                    pauseBreakBtn.style.display = 'none';
+                }
+            }
+
+            function playNotificationSound() {
+                notificationSound.currentTime = 0;
+                notificationSound.play().catch(error => console.error('Sound playback failed:', error));
+            }
+
+            function startPomodoro() {
+                if (!isPomodoroRunning && !isBreakRunning) {
+                    isPomodoroRunning = true;
+                    pomodoroDuration = pausedPomodoroTime || initialPomodoroDuration;
+                    document.getElementById('pomodoro-title').innerText = 'Pomodoro Started';
+                    playNotificationSound();
+                    pomodoroInterval = setInterval(updatePomodoroTimer, 1000);
+                } else if (isBreakRunning) {
+                    pauseBreak();
+                    startPomodoro();
+                }
+                updateButtonStates();
+            }
+
+            function pausePomodoro() {
+                if (isPomodoroRunning) {
+                    clearInterval(pomodoroInterval);
+                    pausedPomodoroTime = pomodoroDuration;
+                    isPomodoroRunning = false;
+                    updateButtonStates();
+                }
+            }
+
+            function startBreak() {
+                if (!isPomodoroRunning && !isBreakRunning) {
+                    isBreakRunning = true;
+                    breakDuration = pausedBreakTime || initialBreakDuration;
+                    document.getElementById('pomodoro-title').innerText = 'Break Started';
+                    playNotificationSound();
+                    breakInterval = setInterval(updateBreakTimer, 1000);
+                } else if (isPomodoroRunning) {
+                    pausePomodoro();
+                    startBreak();
+                }
+                updateButtonStates();
+            }
+
+            function pauseBreak() {
+                if (isBreakRunning) {
+                    clearInterval(breakInterval);
+                    pausedBreakTime = breakDuration;
+                    isBreakRunning = false;
+                    updateButtonStates();
+                }
+            }
+
+            function resetTimers() {
+                if (isPomodoroRunning) pausePomodoro();
+                if (isBreakRunning) pauseBreak();
+                pomodoroDuration = initialPomodoroDuration;
+                breakDuration = initialBreakDuration;
+                pausedPomodoroTime = 0;
+                pausedBreakTime = 0;
+                document.getElementById('pomodoro-timer').innerHTML = formatTime(initialPomodoroDuration);
+                document.getElementById('pomodoro-title').innerText = 'Pomodoro Timer';
+                updateButtonStates();
+            }
+
+            function updatePomodoroTimer() {
+                pomodoroDuration -= 1;
+                document.getElementById('pomodoro-timer').innerHTML = formatTime(pomodoroDuration);
+                if (pomodoroDuration <= 0) {
+                    clearInterval(pomodoroInterval);
+                    isPomodoroRunning = false;
+                    document.getElementById('pomodoro-title').innerText = 'Pomodoro Ended';
+                    playNotificationSound();
+                    startBreak();
+                }
+            }
+
+            function updateBreakTimer() {
+                breakDuration -= 1;
+                document.getElementById('pomodoro-timer').innerHTML = formatTime(breakDuration);
+                if (breakDuration <= 0) {
+                    clearInterval(breakInterval);
+                    isBreakRunning = false;
+                    document.getElementById('pomodoro-title').innerText = 'Break Ended';
+                    playNotificationSound();
+                    startPomodoro();
+                }
+            }
+
+            function formatTime(time) {
+                const minutes = Math.floor(time / 60);
+                const seconds = time % 60;
+                return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            document.getElementById('pomodoro-duration').addEventListener('input', function() {
+                if (isPomodoroRunning || isBreakRunning) {
+                    this.value = Math.floor(initialPomodoroDuration / 60);
+                    alert('You cannot change timer duration while a timer is running.');
+                } else {
+                    initialPomodoroDuration = parseInt(this.value) * 60;
+                    document.getElementById('pomodoro-timer').innerHTML = formatTime(initialPomodoroDuration);
+                    resetTimers();
+                }
+            });
+
+            document.getElementById('break-duration').addEventListener('input', function() {
+                if (isPomodoroRunning || isBreakRunning) {
+                    this.value = Math.floor(initialBreakDuration / 60);
+                    alert('You cannot change timer duration while a timer is running.');
+                } else {
+                    initialBreakDuration = parseInt(this.value) * 60;
+                    resetTimers();
+                }
+            });
+
+            document.getElementById('start-pomodoro-btn').addEventListener('click', startPomodoro);
+            document.getElementById('pause-pomodoro-btn').addEventListener('click', pausePomodoro);
+            document.getElementById('start-break-btn').addEventListener('click', startBreak);
+            document.getElementById('pause-break-btn').addEventListener('click', pauseBreak);
+            document.getElementById('reset-pomodoro-btn').addEventListener('click', resetTimers);
+
+            window.addEventListener('beforeunload', savePomodoroState);
+            loadPomodoroState();
+
+
+            const addTaskBtn = document.getElementById('addTaskBtn');
+            const newTaskContainer = document.getElementById('newTaskContainer');
+            const newTaskInput = document.getElementById('newTaskInput');
+            const submitTaskBtn = document.getElementById('submitTaskBtn');
+            const taskList = document.getElementById('taskList');
+            const taskTimerInput = document.getElementById('taskTimer');
+
+            const activeTimers = {};
+
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            function startTaskTimer(taskId, totalMinutes) {
+                if (activeTimers[taskId]) {
+                    clearInterval(activeTimers[taskId].interval);
+                }
+
+                const timerElement = document.querySelector(`.timer-countdown[data-task-id="${taskId}"]`);
+                const taskItem = document.querySelector(`[data-task-id="${taskId}"]`).closest('li');
+                const totalSeconds = totalMinutes * 60;
+                const priority = parseInt(document.getElementById('taskPriority').value);
+                let remainingSeconds = totalSeconds;
+
+                const interval = setInterval(() => {
+                    remainingSeconds--;
+                    timerElement.textContent = formatTime(remainingSeconds);
+
+                    if (remainingSeconds <= 0) {
+                        clearInterval(interval);
+                        timerElement.textContent = '';
+                        toggleTaskCompletion(taskId);
+                        recordCompletedTask(taskItem.querySelector('span'));
+                        delete activeTimers[taskId];
+                    }
+                }, 1000);
+
+                activeTimers[taskId] = {
+                    interval,
+                    totalSeconds,
+                    startTime: Date.now()
+                };
+            }
+
+            function addTask() {
+                const taskText = newTaskInput.value.trim();
+                const priority = parseInt(document.getElementById('taskPriority').value);
+                const timer = taskTimerInput.value ? parseInt(taskTimerInput.value) : null;
+
+                if (taskText) {
+                    fetch('/add_task', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            task: taskText,
+                            priority: priority,
+                            timer: timer
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                location.reload();
+                            } else {
+                                alert('Failed to add task.');
+                            }
+                        })
+                        .catch(error => console.error('Error adding task:', error));
+                }
+            }
+
+            function toggleTaskCompletion(taskId) {
+                const taskItem = document.querySelector(`[data-task-id="${taskId}"]`).closest('li');
+                const hasTimer = taskItem.dataset.taskTimer;
+            // Get the task's actual priority from the data attribute instead of the form
+                const priority = parseInt(taskItem.dataset.priority || 0);
+                const isCurrentlyCompleted = taskItem.classList.contains('text-bg-success');
+
+            // If task has a timer, check if it's still active
+                if (hasTimer && activeTimers[taskId]) {
+                    const timer = activeTimers[taskId];
+                    const elapsedTime = (Date.now() - timer.startTime) / 1000;
+
+                // If timer is still running, show an alert
+                    if (elapsedTime < timer.totalSeconds) {
+                        alert('Cannot complete task. Timer is still running.');
+                        return;
+                    }
+                }
+
+                fetch('/toggle_task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        task_id: taskId,
+                        is_timed_task: !!hasTimer,
+                        priority: priority,
+                        completed: !isCurrentlyCompleted // Send the new state
+                    })
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(errorData => {
+                                console.error('Error details:', errorData);
+                                throw new Error(errorData.error || 'Failed to toggle task completion');
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                        // Update visual state
+                            if (!isCurrentlyCompleted) {
+                                taskItem.classList.add('text-bg-success');
+                                taskItem.classList.remove('text-bg-danger', 'text-bg-warning', 'text-bg-light');
+                            } else {
+                                taskItem.classList.remove('text-bg-success');
+                            // Restore original priority-based styling
+                                const priorityClass = getPriorityClass(priority);
+                                taskItem.classList.add(priorityClass);
+                            }
+
+                        // Toggle completed text style
+                            const taskText = taskItem.querySelector('span');
+                            if (taskText) {
+                                taskText.classList.toggle('text-decoration-line-through');
+                            }
+
+                        // Clear any existing timer for this task
+                            if (activeTimers[taskId]) {
+                                clearInterval(activeTimers[taskId].interval);
+                                delete activeTimers[taskId];
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error toggling task completion:', error);
+                        alert(error.message);
+                    });
+            }
+
+        // Helper function to get priority-based styling
+            function getPriorityClass(priority) {
+                switch (priority) {
+                    case 1:
+                        return 'text-bg-danger';
+                    case 2:
+                        return 'text-bg-warning';
+                    default:
+                        return 'text-bg-light';
+                }
+            }
+
+            function deleteTask(taskId) {
+            // If there's an active timer for this task, clear it
+                if (activeTimers[taskId]) {
+                    clearInterval(activeTimers[taskId].interval);
+                    delete activeTimers[taskId];
+                }
+
+                fetch('/delete_task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        task_id: taskId
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const taskItem = taskList.querySelector(`[data-task-id="${taskId}"]`).closest('li');
+                            if (taskItem) {
+                                taskList.removeChild(taskItem);
+                            }
+                        } else {
+                            alert('Failed to delete task.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error deleting task:', error);
+                    });
+            }
+
+        // Initialize any existing task timers on page load
+            document.addEventListener('DOMContentLoaded', () => {
+                document.querySelectorAll('#taskList li').forEach(taskItem => {
+                    const taskId = taskItem.querySelector('.task-complete-btn').dataset.taskId;
+                    const timerMinutes = taskItem.dataset.taskTimer;
+
+                    if (timerMinutes) {
+                        startTaskTimer(taskId, parseInt(timerMinutes));
+                    }
+                });
+            });
+
+            addTaskBtn.addEventListener('click', function() {
+                newTaskContainer.style.display = newTaskContainer.style.display === 'none' ? 'block' : 'none';
+                if (newTaskContainer.style.display === 'block') {
+                    newTaskInput.focus();
+                }
+            });
+
+            submitTaskBtn.addEventListener('click', function() {
+                addTask();
+                newTaskInput.value = '';
+                taskTimerInput.value = '';
+                newTaskContainer.style.display = 'none';
+            });
+
+            newTaskInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addTask();
+                    newTaskInput.value = '';
+                    taskTimerInput.value = '';
+                    newTaskContainer.style.display = 'none';
+                }
+            });
+
+        // In the click event listener for task list
+            taskList.addEventListener('click', function(e) {
+                const completeBtn = e.target.closest('.task-complete-btn');
+                const deleteBtn = e.target.closest('.task-delete-btn');
+
+                if (completeBtn) {
+                    const taskId = completeBtn.getAttribute('data-task-id');
+                    const taskItem = completeBtn.closest('li');
+                    const timerMinutes = taskItem.dataset.taskTimer;
+
+                    if (timerMinutes) {
+                    // For timed tasks, start the timer if not already started
+                        if (!activeTimers[taskId]) {
+                            startTaskTimer(taskId, parseInt(timerMinutes));
+                        } else {
+                            toggleTaskCompletion(taskId);
+                            recordCompletedTask(taskItem.querySelector('span'));
+                        }
+                    } else {
+                        toggleTaskCompletion(taskId);
+                        recordCompletedTask(taskItem.querySelector('span'));
+                    }
+                }
+
+                if (deleteBtn) {
+                    const taskId = deleteBtn.getAttribute('data-task-id');
+                    deleteTask(taskId);
+                }
+            });
+        });
+
+        document.head.insertAdjacentHTML('beforeend', `
+    <style>
+        .active-event-banner {
+            position: fixed !important;
+            z-index: 9999;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: none;
+            width: 100%;
+            left: 0;
+            right: 0;
+        }
+        .banner-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+        }
+    </style>
+`);
+
+        const dismissedBanners = new Set();
+        const notifiedEvents = new Set();
+
+        function checkActiveEvents() {
+            const now = new Date();
+            fetch('/get_upcoming_events')
+                .then(response => response.json())
+                .then(events => {
+                    const upcomingList = document.getElementById('upcoming-events-list');
+                    upcomingList.innerHTML = '';
+
+                    let bannerContainer = document.getElementById('banner-container');
+                    if (!bannerContainer) {
+                        bannerContainer = document.createElement('div');
+                        bannerContainer.id = 'banner-container';
+                        bannerContainer.className = 'banner-container';
+                        document.body.insertBefore(bannerContainer, document.body.firstChild);
+                    }
+
+                    bannerContainer.innerHTML = '';
+                    let activeEventCount = 0;
+
+                    events.forEach(event => {
+                        const eventDate = new Date(event.event_date);
+                        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+                        const eventKey = `${event.event_name}-${event.event_date}-${event.event_time || 'allday'}`;
+
+                        let isActive = false;
+                        let isUpcoming = false;
+                        let eventDetails = '';
+                        let shouldDisplay = false;
+
+                        if (event.all_day) {
+                            if (eventDate >= todayStart && eventDate <= todayEnd) {
+                                isActive = true;
+                                shouldDisplay = true;
+                                eventDetails = `All Day Event on ${event.event_date}`;
+
+                                if (!notifiedEvents.has(eventKey)) {
+                                    notifiedEvents.add(eventKey);
+                                }
+                            }
+                            if (eventDate >= todayStart) {
+                                isUpcoming = true;
+                            }
+                        } else {
+                            const eventDateTime = new Date(`${event.event_date}T${event.event_time}`);
+                            const eventEndDateTime = new Date(eventDateTime.getTime() + (event.event_duration * 60000));
+
+                            if (now <= eventEndDateTime) {
+                                isUpcoming = true;
+
+                                if (now >= eventDateTime && now <= eventEndDateTime) {
+                                    isActive = true;
+                                    shouldDisplay = true;
+                                    eventDetails = `Happening now: ${event.event_date} at ${event.event_time}`;
+                                    if (!notifiedEvents.has(eventKey)) {
+                                        notifiedEvents.add(eventKey);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (isUpcoming) {
+                            const listItem = document.createElement('li');
+                            listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+                            if (event.all_day) {
+                                listItem.innerHTML = `
+                            ${event.event_name}
+                            <span class="badge bg-primary">All Day Event on ${event.event_date}</span>
+                        `;
+                            } else {
+                                listItem.innerHTML = `
+                            ${event.event_name}
+                            <span class="badge bg-primary">${event.event_date} at ${event.event_time}</span>
+                        `;
+                            }
+                            upcomingList.appendChild(listItem);
+                        }
+
+                        if (isActive && shouldDisplay && !dismissedBanners.has(eventKey)) {
+                            const banner = document.createElement('div');
+                            banner.className = 'active-event-banner alert alert-success';
+                            banner.style.top = `${activeEventCount * 60}px`;
+                            banner.style.display = 'block';
+                            banner.innerHTML = `
+                        <strong>${event.event_name}</strong>
+                        <span class="ms-3">${eventDetails}</span>
+                        <button type="button" class="btn btn-sm btn-outline-success ms-3" data-event-key="${eventKey}">Dismiss</button>
+                    `;
+
+                            banner.querySelector('button').addEventListener('click', function() {
+                                const eventKey = this.getAttribute('data-event-key');
+                                dismissedBanners.add(eventKey);
+                                banner.remove();
+                                document.querySelectorAll('.active-event-banner').forEach((banner, index) => {
+                                    banner.style.top = `${index * 60}px`;
+                                });
+                            });
+
+                            bannerContainer.appendChild(banner);
+                            activeEventCount++;
+                        }
+                    });
+
+                    if (upcomingList.children.length === 0) {
+                        const emptyMessage = document.createElement('li');
+                        emptyMessage.className = 'list-group-item text-center text-muted';
+                        emptyMessage.textContent = 'No upcoming events';
+                        upcomingList.appendChild(emptyMessage);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching events:', error);
+                });
+        }
+
+        function clearNotifiedEventsAtMidnight() {
+            const now = new Date();
+            const night = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+            const msToMidnight = night.getTime() - now.getTime();
+
+            setTimeout(() => {
+                notifiedEvents.clear();
+                clearNotifiedEventsAtMidnight();
+            }, msToMidnight);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkActiveEvents();
+            clearNotifiedEventsAtMidnight();
+            setInterval(checkActiveEvents, 2000);
+        });
+    </script>
+    {% if game == 'Snake' %}
+        <br>
+        <script>
+            function checkGameState() {
+                $.getJSON('/game_state', function(data) {
+                    if (data.game === null && data.gametime <= 0) {
+                        localStorage.setItem('gameOver', "1");
+                        clearInterval(gameInterval);
+                        window.location.href = window.location.href;
+                    } else {
+                        localStorage.setItem('gameOver', "0");
+                    }
+                });
+            }
+
+            var gameInterval = setInterval(checkGameState, 1000);
+        </script>
+        <div class="row">
+            <style>
+                #snake-game-container {
+                    position: relative;
+                    text-align: center;
+                    font-family: Arial, sans-serif;
+                }
+
+                #snake-game-board {
+                    position: relative;
+                    overflow: hidden;
+                    margin: 0 auto;
+                    border: 3px solid #2c3e50;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                }
+
+                #game-score {
+                    font-size: 20px;
+                    margin-bottom: 10px;
+                    font-weight: bold;
+                    color: #2c3e50;
+                }
+
+                #game-over-overlay,
+                #start-game-screen {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.8);
+                    display: none;
+                    justify-content: center;
+                    align-items: center;
+                    flex-direction: column;
+                    text-align: center;
+                    z-index: 1000;
+                }
+
+                #game-over-overlay h2,
+                #start-game-screen h2 {
+                    margin: 0;
+                    font-size: 36px;
+                    color: white;
+                    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+                }
+
+                #restart-btn,
+                #start-btn {
+                    background-color: #28a745;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    font-size: 20px;
+                    cursor: pointer;
+                    border-radius: 8px;
+                    margin-top: 20px;
+                    transition: background-color 0.3s ease;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                }
+
+                #restart-btn:hover,
+                #start-btn:hover {
+                    background-color: #218838;
+                }
+
+                .snake-segment,
+                .food,
+                .blue-fruit,
+                .yellow-fruit {
+                    position: absolute;
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 5px;
+                    transition: all 0.2s ease;
+                }
+
+                .snake-segment {
+                    background-color: #2ecc71;
+                    border: 2px solid #27ae60;
+                    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+                }
+
+                .snake-head {
+                    background-color: #27ae60 !important;
+                    border: 2px solid #2c3e50 !important;
+                }
+
+                .snake-head::before {
+                    content: '';
+                    position: absolute;
+                    top: 4px;
+                    left: 6px;
+                    width: 4px;
+                    height: 4px;
+                    background-color: white;
+                    border-radius: 50%;
+                    box-shadow: 6px 0 0 white;
+                }
+
+                .food {
+                    background-color: #e74c3c;
+                    border: 2px solid #c0392b;
+                    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+                }
+
+                .food::after {
+                    content: '';
+                    position: absolute;
+                    top: -4px;
+                    left: 6px;
+                    width: 6px;
+                    height: 6px;
+                    background-color: #2ecc71;
+                    transform: rotate(45deg);
+                }
+
+                .blue-fruit {
+                    background-color: #3498db;
+                    border: 2px solid #2980b9;
+                    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+                }
+
+                .yellow-fruit {
+                    background-color: #f1c40f;
+                    border: 2px solid #f39c12;
+                    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+                }
+
+                .blue-fruit::after,
+                .yellow-fruit::after {
+                    content: '';
+                    position: absolute;
+                    top: -4px;
+                    left: 6px;
+                    width: 6px;
+                    height: 6px;
+                    background-color: #2ecc71;
+                    transform: rotate(45deg);
+                }
+            </style>
+            <div id="snake-game-container" style="padding: 50px">
+                <div id="game-score">Score: 0</div>
+                <div id="snake-game-board"></div>
+                <div id="start-game-screen" style="z-index: 1000; display: block;">
+                    <h2>Welcome to Snake!</h2>
+                    <button id="start-btn">Start Game</button>
+                </div>
+                <div id="game-over-overlay">
+                    <h2>Game Over!</h2>
+                    <p id="final-score" style="color: white;">Score: 0</p>
+                    <button id="restart-btn">Restart Game</button>
+                </div>
+            </div>
+            <script>
+                class SnakeGame {
+                    constructor(boardElement, scoreElement, gameOverOverlay) {
+                        this.boardElement = boardElement;
+                        this.scoreElement = scoreElement;
+                        this.gameOverOverlay = gameOverOverlay;
+                        this.isGameOver = false;
+
+                        this.boardWidth = 400;
+                        this.boardHeight = 400;
+                        this.gridSize = 20;
+                        this.tileCount = this.boardWidth / this.gridSize;
+
+                        this.snake = [{
+                            x: Math.floor(this.tileCount / 2),
+                            y: Math.floor(this.tileCount / 2)
+                        }];
+                        this.food = this.generateFood();
+                        this.dx = 1;
+                        this.dy = 0;
+                        this.score = 0;
+                        this.speed = 200;
+                        this.blueFruit = null;
+                        this.yellowFruit = null;
+                        this.isSpeedBoostActive = false;
+                        this.yellowFruitActive = false;
+                        this.speedBoostTimer = null;
+                        this.yellowFruitTimer = null;
+                        this.blueFruitCooldown = false;
+                        this.yellowFruitCooldown = false;
+                        this.normalSpeed = 200;
+                        this.boostedSpeed = 60;
+                        this.lastMoveTime = 0;
+                        this.movementCooldown = 50;
+                        this.greenFruit = null;
+                        this.greenFruitCooldown = false;
+                        this.greenFruitActive = false;
+                        this.greenFruitTimer = null;
+                        this.colorCycleTimer = null;
+                        this.nextDirection = null;
+
+                        this.setupBoard();
+                        this.setupControls();
+                        this.gameLoop = null;
+                    }
+
+                    setupBoard() {
+                        this.boardElement.style.width = `${this.boardWidth}px`;
+                        this.boardElement.style.height = `${this.boardHeight}px`;
+                        this.drawGame();
+                    }
+
+                    setupControls() {
+                        document.addEventListener('keydown', (e) => {
+                            if (this.isGameOver) return;
+
+                            const key = e.key;
+                            const now = Date.now();
+
+                            if (now - this.lastMoveTime >= this.movementCooldown) {
+                                let newDx = this.dx;
+                                let newDy = this.dy;
+
+                                switch (key) {
+                                    case 'ArrowUp':
+                                    case 'w':
+                                        if (this.dy !== 1) {
+                                            newDx = 0;
+                                            newDy = -1;
+                                        }
+                                        break;
+                                    case 'ArrowDown':
+                                    case 's':
+                                        if (this.dy !== -1) {
+                                            newDx = 0;
+                                            newDy = 1;
+                                        }
+                                        break;
+                                    case 'ArrowLeft':
+                                    case 'a':
+                                        if (this.dx !== 1) {
+                                            newDx = -1;
+                                            newDy = 0;
+                                        }
+                                        break;
+                                    case 'ArrowRight':
+                                    case 'd':
+                                        if (this.dx !== -1) {
+                                            newDx = 1;
+                                            newDy = 0;
+                                        }
+                                        break;
+                                    default:
+                                        return;
+                                }
+
+                                this.dx = newDx;
+                                this.dy = newDy;
+                                this.lastMoveTime = now;
+                            }
+                        });
+                    }
+
+                    generateGreenFruit() {
+                        if (!this.greenFruitCooldown && !this.greenFruit) {
+                            let newGreenFruit;
+                            do {
+                                newGreenFruit = {
+                                    x: Math.floor(Math.random() * this.tileCount),
+                                    y: Math.floor(Math.random() * this.tileCount)
+                                };
+                            } while (
+                                this.snake.some(segment => segment.x === newGreenFruit.x && segment.y === newGreenFruit.y) ||
+                                (this.food.x === newGreenFruit.x && this.food.y === newGreenFruit.y) ||
+                                (this.blueFruit && this.blueFruit.x === newGreenFruit.x && this.blueFruit.y === newGreenFruit.y) ||
+                                (this.yellowFruit && this.yellowFruit.x === newGreenFruit.x && this.yellowFruit.y === newGreenFruit.y)
+                            );
+                            this.greenFruit = newGreenFruit;
+
+                            this.greenFruitDespawnTimer = setTimeout(() => {
+                                this.greenFruit = null;
+                            }, 7000);
+                        }
+                    }
+
+                    activateGreenFruit() {
+                        this.greenFruitActive = true;
+                        this.activateSpeedBoost();
+                        this.startColorCycle();
+
+                        clearTimeout(this.greenFruitTimer);
+                        clearTimeout(this.colorCycleTimer);
+
+                        this.greenFruitTimer = setTimeout(() => {
+                            this.deactivateGreenFruit();
+                        }, 20000);
+
+                        setTimeout(() => {
+                            this.greenFruitCooldown = false;
+                        }, 25000);
+                    }
+
+                    startColorCycle() {
+                        let isYellow = true;
+                        this.colorCycleTimer = setInterval(() => {
+                            isYellow = !isYellow;
+                            this.drawGame();
+                        }, 500);
+                    }
+
+                    deactivateGreenFruit() {
+                        this.greenFruitActive = false;
+                        clearTimeout(this.greenFruitTimer);
+                        clearTimeout(this.colorCycleTimer);
+                        this.deactivateSpeedBoost();
+                        this.drawGame();
+                    }
+
+
+                    isAdjacent(pos1, pos2) {
+                        return Math.abs(pos1.x - pos2.x) + Math.abs(pos1.y - pos2.y) === 1;
+                    }
+
+                    generateFood() {
+                        let newFood;
+                        do {
+                            newFood = {
+                                x: Math.floor(Math.random() * this.tileCount),
+                                y: Math.floor(Math.random() * this.tileCount)
+                            };
+                        } while (this.snake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
+                        return newFood;
+                    }
+
+                    generateBlueFruit() {
+                        if (!this.blueFruitCooldown && !this.blueFruit) {
+                            let newBlueFruit;
+                            do {
+                                newBlueFruit = {
+                                    x: Math.floor(Math.random() * this.tileCount),
+                                    y: Math.floor(Math.random() * this.tileCount)
+                                };
+                            } while (
+                                this.snake.some(segment => segment.x === newBlueFruit.x && segment.y === newBlueFruit.y) ||
+                                (this.food.x === newBlueFruit.x && this.food.y === newBlueFruit.y) ||
+                                (this.yellowFruit && this.yellowFruit.x === newBlueFruit.x && this.yellowFruit.y === newBlueFruit.y) ||
+                                (this.greenFruit && this.greenFruit.x === newBlueFruit.x && this.greenFruit.y === newBlueFruit.y)
+                            );
+                            this.blueFruit = newBlueFruit;
+
+                            this.blueFruitDespawnTimer = setTimeout(() => {
+                                this.blueFruit = null;
+                            }, 7000);
+                        }
+                    }
+
+                    generateYellowFruit() {
+                        if (!this.yellowFruitCooldown && !this.yellowFruit) {
+                            let newYellowFruit;
+                            do {
+                                newYellowFruit = {
+                                    x: Math.floor(Math.random() * this.tileCount),
+                                    y: Math.floor(Math.random() * this.tileCount)
+                                };
+                            } while (
+                                this.snake.some(segment => segment.x === newYellowFruit.x && segment.y === newYellowFruit.y) ||
+                                (this.food.x === newYellowFruit.x && this.food.y === newYellowFruit.y) ||
+                                (this.blueFruit && this.blueFruit.x === newYellowFruit.x && this.blueFruit.y === newYellowFruit.y) ||
+                                (this.greenFruit && this.greenFruit.x === newYellowFruit.x && this.greenFruit.y === newYellowFruit.y)
+                            );
+                            this.yellowFruit = newYellowFruit;
+
+                            this.yellowFruitDespawnTimer = setTimeout(() => {
+                                this.yellowFruit = null;
+                            }, 7000);
+                        }
+                    }
+
+                    activateYellowFruit() {
+                        this.yellowFruitActive = true;
+                        clearTimeout(this.yellowFruitTimer);
+
+                        this.yellowFruitTimer = setTimeout(() => {
+                            this.yellowFruitActive = false;
+                            this.drawGame();
+                        }, 15000);
+
+                        setTimeout(() => {
+                            this.yellowFruitCooldown = false;
+                        }, 20000);
+                    }
+
+                    moveSnake() {
+                        if (this.isGameOver) return;
+                        const newHead = {
+                            x: this.snake[0].x + this.dx,
+                            y: this.snake[0].y + this.dy
+                        };
+
+                        if (
+                            newHead.x < 0 || newHead.x >= this.tileCount ||
+                            newHead.y < 0 || newHead.y >= this.tileCount ||
+                            this.snake.some(segment => segment.x === newHead.x && segment.y === newHead.y)
+                        ) {
+                            this.gameOver();
+                            return;
+                        }
+
+                        this.snake.unshift(newHead);
+
+                        if (this.yellowFruitActive || this.greenFruitActive) {
+                            const collectFruit = (fruit) => {
+                                if (!fruit) return false;
+
+                                const isWithinReach =
+                                    this.snake.some(segment => this.isAdjacent(segment, fruit)) ||
+                                this.isWithinTwoBlocksOfHead(newHead, fruit);
+
+                                if (isWithinReach) {
+                                    if (fruit === this.food) {
+                                        this.score++;
+                                        this.scoreElement.textContent = `Score: ${this.score}`;
+                                        this.food = this.generateFood();
+
+                                        const fruitRoll = Math.random();
+                                        if (fruitRoll < 1 / 3) {
+                                            const specialFruitRoll = Math.random();
+                                            if (specialFruitRoll < 0.4) {
+                                                this.generateSpecialFruit('blue');
+                                            } else if (specialFruitRoll < 0.8) {
+                                                this.generateSpecialFruit('yellow');
+                                            } else {
+                                                this.generateSpecialFruit('green');
+                                            }
+                                        }
+                                        return true;
+                                    } else if (fruit === this.blueFruit) {
+                                        this.activateSpeedBoost();
+                                        this.blueFruit = null;
+                                        this.blueFruitCooldown = true;
+                                        return true;
+                                    } else if (fruit === this.yellowFruit) {
+                                        this.activateYellowFruit();
+                                        this.yellowFruit = null;
+                                        this.yellowFruitCooldown = true;
+                                        return true;
+                                    } else if (fruit === this.greenFruit) {
+                                        this.activateGreenFruit();
+                                        this.greenFruit = null;
+                                        this.greenFruitCooldown = true;
+                                        return true;
+                                    }
+                                }
+                                return false;
+                            };
+
+                            const fruits = [this.food, this.blueFruit, this.yellowFruit, this.greenFruit].filter(Boolean);
+                            const fruitCollected = fruits.some(collectFruit);
+
+                            if (!fruitCollected) {
+                                this.snake.pop();
+                            }
+                        } else {
+                            if (this.checkIfPositionsMatch(newHead, this.food)) {
+                                this.score++;
+                                this.scoreElement.textContent = `Score: ${this.score}`;
+                                this.food = this.generateFood();
+
+                                const fruitRoll = Math.random();
+                                if (fruitRoll < 0.33) {
+                                    this.generateBlueFruit();
+                                } else if (fruitRoll < 0.66) {
+                                    this.generateYellowFruit();
+                                } else if (fruitRoll < 0.80) {
+                                    this.generateGreenFruit();
+                                }
+                            } else if (this.blueFruit && this.checkIfPositionsMatch(newHead, this.blueFruit)) {
+                                this.activateSpeedBoost();
+                                this.blueFruit = null;
+                                this.blueFruitCooldown = true;
+                            } else if (this.yellowFruit && this.checkIfPositionsMatch(newHead, this.yellowFruit)) {
+                                this.activateYellowFruit();
+                                this.yellowFruit = null;
+                                this.yellowFruitCooldown = true;
+                            } else if (this.greenFruit && this.checkIfPositionsMatch(newHead, this.greenFruit)) {
+                                this.activateGreenFruit();
+                                this.greenFruit = null;
+                                this.greenFruitCooldown = true;
+                            } else {
+                                this.snake.pop();
+                            }
+                        }
+
+                        this.drawGame();
+                    }
+                    isWithinTwoBlocksOfHead(head, fruit) {
+                        return Math.abs(head.x - fruit.x) <= 2 && Math.abs(head.y - fruit.y) <= 2;
+                    }
+
+                    checkIfPositionsMatch(pos1, pos2) {
+                        return pos1.x === pos2.x && pos1.y === pos2.y;
+                    }
+
+                    drawGame() {
+                        this.boardElement.innerHTML = '';
+
+                        this.snake.forEach((segment, index) => {
+                            const snakeElement = document.createElement('div');
+                            snakeElement.classList.add('snake-segment');
+
+                            if (index === 0) {
+                                snakeElement.classList.add('snake-head');
+                            }
+
+                            if (this.isSpeedBoostActive) {
+                                if (this.greenFruitActive) {
+                                    snakeElement.style.backgroundColor =
+                                    (index % 2 === 0) ? 'yellow' : 'blue';
+                                } else {
+                                    snakeElement.style.backgroundColor = 'blue';
+                                }
+                            } else if (this.yellowFruitActive) {
+                                snakeElement.style.backgroundColor = 'yellow';
+                            }
+
+                            snakeElement.style.position = 'absolute';
+                            snakeElement.style.width = `${this.gridSize}px`;
+                            snakeElement.style.height = `${this.gridSize}px`;
+                            snakeElement.style.left = `${segment.x * this.gridSize}px`;
+                            snakeElement.style.top = `${segment.y * this.gridSize}px`;
+                            this.boardElement.appendChild(snakeElement);
+                        });
+
+                        const foodElement = document.createElement('div');
+                        foodElement.classList.add('food');
+                        foodElement.style.position = 'absolute';
+                        foodElement.style.width = `${this.gridSize}px`;
+                        foodElement.style.height = `${this.gridSize}px`;
+                        foodElement.style.left = `${this.food.x * this.gridSize}px`;
+                        foodElement.style.top = `${this.food.y * this.gridSize}px`;
+                        this.boardElement.appendChild(foodElement);
+
+                        if (this.blueFruit) {
+                            const blueFruitElement = document.createElement('div');
+                            blueFruitElement.classList.add('food', 'blue-fruit');
+                            blueFruitElement.style.position = 'absolute';
+                            blueFruitElement.style.width = `${this.gridSize}px`;
+                            blueFruitElement.style.height = `${this.gridSize}px`;
+                            blueFruitElement.style.left = `${this.blueFruit.x * this.gridSize}px`;
+                            blueFruitElement.style.top = `${this.blueFruit.y * this.gridSize}px`;
+                            this.boardElement.appendChild(blueFruitElement);
+                        }
+
+                        if (this.yellowFruit) {
+                            const yellowFruitElement = document.createElement('div');
+                            yellowFruitElement.classList.add('food', 'yellow-fruit');
+                            yellowFruitElement.style.position = 'absolute';
+                            yellowFruitElement.style.width = `${this.gridSize}px`;
+                            yellowFruitElement.style.height = `${this.gridSize}px`;
+                            yellowFruitElement.style.left = `${this.yellowFruit.x * this.gridSize}px`;
+                            yellowFruitElement.style.top = `${this.yellowFruit.y * this.gridSize}px`;
+                            this.boardElement.appendChild(yellowFruitElement);
+                        }
+
+                        if (this.greenFruit) {
+                            const greenFruitElement = document.createElement('div');
+                            greenFruitElement.classList.add('food', 'green-fruit');
+                            greenFruitElement.style.position = 'absolute';
+                            greenFruitElement.style.backgroundColor = 'green';
+                            greenFruitElement.style.width = `${this.gridSize}px`;
+                            greenFruitElement.style.height = `${this.gridSize}px`;
+                            greenFruitElement.style.left = `${this.greenFruit.x * this.gridSize}px`;
+                            greenFruitElement.style.top = `${this.greenFruit.y * this.gridSize}px`;
+                            this.boardElement.appendChild(greenFruitElement);
+                        }
+                    }
+
+                    activateSpeedBoost() {
+                        this.isSpeedBoostActive = true;
+                        this.speed = this.boostedSpeed;
+                        clearInterval(this.gameLoop);
+                        this.gameLoop = setInterval(() => {
+                            this.moveSnake();
+                        }, this.speed);
+
+                        if (this.speedBoostTimer) {
+                            clearTimeout(this.speedBoostTimer);
+                        }
+
+                        this.speedBoostTimer = setTimeout(() => {
+                            this.deactivateSpeedBoost();
+                        }, 15000);
+
+                        setTimeout(() => {
+                            this.blueFruitCooldown = false;
+                        }, 20000);
+                    }
+
+                    deactivateSpeedBoost() {
+                        this.isSpeedBoostActive = false;
+                        this.speed = this.normalSpeed;
+                        clearInterval(this.gameLoop);
+                        this.gameLoop = setInterval(() => {
+                            this.moveSnake();
+                        }, this.speed);
+                        this.drawGame();
+                    }
+
+                    startGame() {
+                        if (this.gameLoop) clearInterval(this.gameLoop);
+                        if (this.speedBoostTimer) clearTimeout(this.speedBoostTimer);
+                        if (this.yellowFruitTimer) clearTimeout(this.yellowFruitTimer);
+                        if (this.blueFruitDespawnTimer) {
+                            clearTimeout(this.blueFruitDespawnTimer);
+                        }
+                        if (this.yellowFruitDespawnTimer) {
+                            clearTimeout(this.yellowFruitDespawnTimer);
+                        }
+                        if (this.greenFruitDespawnTimer) {
+                            clearTimeout(this.greenFruitDespawnTimer);
+                        }
+
+                        this.snake = [{
+                            x: Math.floor(this.tileCount / 2),
+                            y: Math.floor(this.tileCount / 2)
+                        }];
+                        this.food = this.generateFood();
+                        this.dx = 1;
+                        this.dy = 0;
+                        this.score = 0;
+                        this.speed = this.normalSpeed;
+                        this.isSpeedBoostActive = false;
+                        this.yellowFruitActive = false;
+                        this.blueFruitCooldown = false;
+                        this.blueFruit = null;
+                        this.yellowFruit = null;
+                        this.greenFruit = null;
+                        this.greenFruitCooldown = false;
+                        this.greenFruitActive = false;
+                        this.yellowFruitCooldown = false;
+
+                        this.scoreElement.textContent = `Score: ${this.score}`;
+                        this.gameLoop = setInterval(() => {
+                            this.moveSnake();
+                        }, this.speed);
+
+                        this.gameOverOverlay.style.display = 'none';
+                    }
+
+                    gameOver() {
+                        if (this.isGameOver) return;
+                        this.isGameOver = true;
+                        clearInterval(this.gameLoop);
+                        if (this.speedBoostTimer) clearTimeout(this.speedBoostTimer);
+                        if (this.yellowFruitTimer) clearTimeout(this.yellowFruitTimer);
+
+                        const finalScoreElement = this.gameOverOverlay.querySelector('#final-score');
+                        finalScoreElement.textContent = `Score: ${this.score}`;
+                        this.gameOverOverlay.style.display = 'flex';
+                    }
+                }
+
+                document.addEventListener('DOMContentLoaded', () => {
+                    const startScreen = document.getElementById('start-game-screen');
+                    const boardElement = document.getElementById('snake-game-board');
+                    const scoreElement = document.getElementById('game-score');
+                    const gameOverOverlay = document.getElementById('game-over-overlay');
+                    const restartButton = document.getElementById('restart-btn');
+                    const startButton = document.getElementById('start-btn');
+
+                    const game = new SnakeGame(boardElement, scoreElement, gameOverOverlay);
+                    startButton.addEventListener('click', () => {
+                        startScreen.style.display = 'none';
+                        game.startGame();
+                    });
+
+                    restartButton.addEventListener('click', () => {
+                        const newGame = new SnakeGame(boardElement, scoreElement, gameOverOverlay);
+                        newGame.startGame();
+                    });
+                });
+            </script>
+        </div>
+    {% elif game == "Flappy Bird" %}
+        <br>
+        <script>
+            function checkGameState() {
+                $.getJSON('/game_state', function(data) {
+                    if (data.game === null && data.gametime <= 0) {
+                        localStorage.setItem('gameOver', "1");
+                        clearInterval(gameInterval);
+                        window.location.href = window.location.href;
+                    } else {
+                        localStorage.setItem('gameOver', "0");
+                    }
+                });
+            }
+
+            var gameInterval = setInterval(checkGameState, 1000);
+        </script>
+        <div class="row">
+            <div class="divcontainer">
+                <canvas id="myCanvas" width=350 height=531 style="background:url('http://s2js.com/img/etc/flappyback.png');  background-size: 100%; height: 95%"></canvas>
+            </div>
+            <style>
+                .divcontainer {
+                    font-family: 'Pacifico';
+                    display: flex;
+                    justify-content: center;
+                }
+
+                canvas {
+                    border: 1x solid #0a3cda;
+                    margin: 10px;
+                }
+            </style>
+            <script>
+                var ctx = myCanvas.getContext('2d');
+                var FPS = 40;
+                var jump_amount = -10;
+                var max_fall_speed = +10;
+                var acceleration = 1;
+                var pipe_speed = -2;
+                var game_mode = 'prestart';
+                var time_game_last_running;
+                var bottom_bar_offset = 0;
+                var pipes = [];
+
+                function MySprite(img_url) {
+                    this.x = 0;
+                    this.y = 0;
+                    this.visible = true;
+                    this.velocity_x = 0;
+                    this.velocity_y = 0;
+                    this.MyImg = new Image();
+                    this.MyImg.src = img_url || '';
+                    this.angle = 0;
+                    this.flipV = false;
+                    this.flipH = false;
+                }
+                MySprite.prototype.Do_Frame_Things = function() {
+                    ctx.save();
+                    ctx.translate(this.x + this.MyImg.width / 2, this.y + this.MyImg.height / 2);
+                    ctx.rotate((this.angle * Math.PI) / 180);
+                    if (this.flipV) ctx.scale(1, -1);
+                    if (this.flipH) ctx.scale(-1, 1);
+                    if (this.visible)
+                        ctx.drawImage(this.MyImg, -this.MyImg.width / 2, -this.MyImg.height / 2);
+                    this.x = this.x + this.velocity_x;
+                    this.y = this.y + this.velocity_y;
+                    ctx.restore();
+                };
+
+                function ImagesTouching(thing1, thing2) {
+                    if (!thing1.visible || !thing2.visible) return false;
+                    if (
+                        thing1.x >= thing2.x + thing2.MyImg.width ||
+                        thing1.x + thing1.MyImg.width <= thing2.x
+                    )
+                        return false;
+                    if (
+                        thing1.y >= thing2.y + thing2.MyImg.height ||
+                        thing1.y + thing1.MyImg.height <= thing2.y
+                    )
+                        return false;
+                    return true;
+                }
+
+                function Got_Player_Input(MyEvent) {
+                    switch (game_mode) {
+                        case 'prestart': {
+                            game_mode = 'running';
+                            break;
+                        }
+                        case 'running': {
+                            bird.velocity_y = jump_amount;
+                            break;
+                        }
+                        case 'over':
+                            if (new Date() - time_game_last_running > 1000) {
+                                reset_game();
+                                game_mode = 'running';
+                                break;
+                            }
+                    }
+                    MyEvent.preventDefault();
+                }
+
+                myCanvas.addEventListener('touchstart', Got_Player_Input);
+                myCanvas.addEventListener('mousedown', Got_Player_Input);
+
+                function make_bird_slow_and_fall() {
+                    if (bird.velocity_y < max_fall_speed) {
+                        bird.velocity_y = bird.velocity_y + acceleration;
+                    }
+                    if (bird.y > myCanvas.height - bird.MyImg.height) {
+                        bird.velocity_y = 0;
+                        game_mode = 'over';
+                    }
+                    if (bird.y < 0 - bird.MyImg.height) {
+                        bird.velocity_y = 0;
+                        game_mode = 'over';
+                    }
+                }
+
+                function add_pipe(x_pos, top_of_gap, gap_width) {
+                    var top_pipe = new MySprite();
+                    top_pipe.MyImg = pipe_piece;
+                    top_pipe.x = x_pos;
+                    top_pipe.y = top_of_gap - pipe_piece.height;
+                    top_pipe.velocity_x = pipe_speed;
+                    pipes.push(top_pipe);
+                    var bottom_pipe = new MySprite();
+                    bottom_pipe.MyImg = pipe_piece;
+                    bottom_pipe.flipV = true;
+                    bottom_pipe.x = x_pos;
+                    bottom_pipe.y = top_of_gap + gap_width;
+                    bottom_pipe.velocity_x = pipe_speed;
+                    pipes.push(bottom_pipe);
+                }
+
+                function make_bird_tilt_appropriately() {
+                    if (bird.velocity_y < 0) {
+                        bird.angle = -15;
+                    } else if (bird.angle < 70) {
+                        bird.angle = bird.angle + 4;
+                    }
+                }
+
+                function show_the_pipes() {
+                    for (var i = 0; i < pipes.length; i++) {
+                        pipes[i].Do_Frame_Things();
+                    }
+                }
+
+                function check_for_end_game() {
+                    for (var i = 0; i < pipes.length; i++)
+                        if (ImagesTouching(bird, pipes[i])) game_mode = 'over';
+                }
+
+                function display_intro_instructions() {
+                    ctx.font = '25px Arial';
+                    ctx.fillStyle = 'red';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(
+                        'Click or touch to start',
+                        myCanvas.width / 2,
+                        myCanvas.height / 4
+                    );
+                }
+
+                function display_game_over() {
+                    var score = 0;
+                    for (var i = 0; i < pipes.length; i++)
+                        if (pipes[i].x < bird.x) score = score + 0.5;
+                    ctx.font = '30px Arial';
+                    ctx.fillStyle = 'red';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Game Over', myCanvas.width / 2, 100);
+                    ctx.fillText('Score: ' + score, myCanvas.width / 2, 150);
+                    ctx.font = '20px Arial';
+                    ctx.fillText('Click or touch to play again', myCanvas.width / 2, 300);
+                }
+
+                function display_bar_running_along_bottom() {
+                    if (bottom_bar_offset < -23) bottom_bar_offset = 0;
+                    ctx.drawImage(
+                        bottom_bar,
+                        bottom_bar_offset,
+                        myCanvas.height - bottom_bar.height
+                    );
+                }
+
+                function reset_game() {
+                    bird.y = myCanvas.height / 2;
+                    bird.angle = 0;
+                    pipes = [];
+                    add_all_my_pipes();
+                }
+
+                function add_all_my_pipes() {
+                    add_pipe(500, 100, 140);
+                    add_pipe(800, 50, 140);
+                    add_pipe(1000, 250, 140);
+                    add_pipe(1200, 150, 120);
+                    add_pipe(1600, 100, 120);
+                    add_pipe(1800, 150, 120);
+                    add_pipe(2000, 200, 120);
+                    add_pipe(2200, 250, 120);
+                    add_pipe(2400, 30, 100);
+                    add_pipe(2700, 300, 100);
+                    add_pipe(3000, 100, 80);
+                    add_pipe(3300, 250, 80);
+                    add_pipe(3600, 50, 60);
+                    var finish_line = new MySprite('http://s2js.com/img/etc/flappyend.png');
+                    finish_line.x = 3900;
+                    finish_line.velocity_x = pipe_speed;
+                    pipes.push(finish_line);
+                }
+                var pipe_piece = new Image();
+                pipe_piece.onload = add_all_my_pipes;
+                pipe_piece.src = 'http://s2js.com/img/etc/flappypipe.png';
+
+                function Do_a_Frame() {
+                    ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+                    bird.Do_Frame_Things();
+                    display_bar_running_along_bottom();
+                    switch (game_mode) {
+                        case 'prestart': {
+                            display_intro_instructions();
+                            break;
+                        }
+                        case 'running': {
+                            time_game_last_running = new Date();
+                            bottom_bar_offset = bottom_bar_offset + pipe_speed;
+                            show_the_pipes();
+                            make_bird_tilt_appropriately();
+                            make_bird_slow_and_fall();
+                            check_for_end_game();
+                            break;
+                        }
+                        case 'over': {
+                            make_bird_slow_and_fall();
+                            display_game_over();
+                            break;
+                        }
+                    }
+                }
+                var bottom_bar = new Image();
+                bottom_bar.src = 'http://s2js.com/img/etc/flappybottom.png';
+
+                var bird = new MySprite('http://s2js.com/img/etc/flappybird.png');
+                bird.x = myCanvas.width / 3;
+                bird.y = myCanvas.height / 2;
+
+                setInterval(Do_a_Frame, 1000 / FPS);
+            </script>
+    {% elif game == "Crossy Road" %}
+        <div class="row">
+            <div class="col-md-12">
+                <div id="divbox">
+                    <button id="crossyStartBtn" class="btn btn-info" style="position: relative; top: 100px; right: 0px; text-align: center; z-index: 100; background-color: red">Start</button>
+                    <div id="controlls" style="right: 0px;">
+                        <div id="counter">0</div>
+                        <div>
+                            <button id="forward">
+                                <svg width="30" height="30" viewBox="0 0 10 10" style="margin-left: 70.5px;">
+                                    <g transform="rotate(0, 5,5)">
+                                        <path d="M5,4 L7,6 L3,6 L5,4" />
+                                    </g>
+                                </svg>
+                            </button>
+                            <button id="left">
+                                <svg width="30" height="30" viewBox="0 0 10 10" style="margin-left: 10px;">
+                                    <g transform="rotate(-90, 5,5)">
+                                        <path d="M5,4 L7,6 L3,6 L5,4" />
+                                    </g>
+                                </svg>
+                            </button>
+                            <button id="backward">
+                                <svg width="30" height="30" viewBox="0 0 10 10" style="margin-left: 10px;">
+                                    <g transform="rotate(180, 5,5)">
+                                        <path d="M5,4 L7,6 L3,6 L5,4" />
+                                    </g>
+                                </svg>
+                            </button>
+                            <button id="right">
+                                <svg width="30" height="30" viewBox="0 0 10 10" style="margin-left: 10px;">
+                                    <g transform="rotate(90, 5,5)">
+                                        <path d="M5,4 L7,6 L3,6 L5,4" />
+                                    </g>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="end">
+                        <button id="retry" style="margin-top: 300px; margin-right: 100px;">Retry</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <style>
+            @import url('https://fonts.googleapis.com/css?family=Press+Start+2P');
+
+            #divbox {
+                margin: 0;
+                font-family: 'Press Start 2P', cursive;
+                font-size: 2em;
+                color: white;
+            }
+
+            div#divbox button {
+                outline: none;
+                cursor: pointer;
+                border: none;
+                box-shadow: 3px 5px 0px 0px rgba(0, 0, 0, 0.75);
+            }
+
+            #counter {
+                position: absolute;
+                top: 50px;
+                right: 20px;
+                color: black;
+                font-weight: bold;
+            }
+
+            #end {
+                position: absolute;
+                min-width: 100%;
+                min-height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                visibility: hidden;
+            }
+
+            #end button {
+                background-color: red;
+                padding: 20px 50px 20px 50px;
+                font-family: inherit;
+                font-size: inherit;
+            }
+
+            #controlls {
+                position: absolute;
+                min-width: 100%;
+                min-height: 100%;
+                display: flex;
+                align-items: flex-end;
+                justify-content: center;
+            }
+
+            #controlls {
+                position: absolute;
+                min-width: 100%;
+                min-height: 100%;
+                display: flex;
+                align-items: flex-end;
+                justify-content: center;
+            }
+
+            #controlls div {
+                display: grid;
+                grid-template-columns: 50px 50px 50px;
+                grid-template-rows: auto auto;
+                grid-column-gap: 10px;
+                grid-row-gap: 10px;
+                margin-bottom: 20px;
+            }
+
+            #controlls button {
+                width: 100%;
+                background-color: white;
+                border: 1px solid lightgray;
+            }
+
+            #controlls button:first-of-type {
+                grid-column: 1/-1;
+            }
+        </style>
+        <script>
+            const counterDOM = document.getElementById('counter');
+            const endDOM = document.getElementById('end');
+
+            const scene = new THREE.Scene();
+
+            const distance = 500;
+            const camera = new THREE.OrthographicCamera(1330 / -2, 1330 / 2, window.innerHeight / 2, window.innerHeight / -2, 0.1, 10000);
+
+            camera.rotation.x = 50 * Math.PI / 180;
+            camera.rotation.y = 20 * Math.PI / 180;
+            camera.rotation.z = 10 * Math.PI / 180;
+
+            const initialCameraPositionY = -Math.tan(camera.rotation.x) * distance;
+            const initialCameraPositionX = Math.tan(camera.rotation.y) * Math.sqrt(distance ** 2 + initialCameraPositionY ** 2);
+            camera.position.y = initialCameraPositionY;
+            camera.position.x = initialCameraPositionX;
+            camera.position.z = distance;
+
+            const zoom = 2;
+
+            const chickenSize = 14.5;
+            let collisionDetected = false;
+
+            const positionWidth = 42;
+            const columns = 17;
+            const boardWidth = positionWidth * columns;
+
+            const stepTime = 200;
+
+            let lanes;
+            let currentLane;
+            let currentColumn;
+
+            let previousTimestamp;
+            let startMoving;
+            let moves;
+            let stepStartTimestamp;
+
+            const carFrontTexture = new Texture(40, 80, [{
+                x: 0,
+                y: 10,
+                w: 30,
+                h: 60
+            }]);
+            const carBackTexture = new Texture(40, 80, [{
+                x: 10,
+                y: 10,
+                w: 30,
+                h: 60
+            }]);
+            const carRightSideTexture = new Texture(110, 40, [{
+                x: 10,
+                y: 0,
+                w: 50,
+                h: 30
+            }, {
+                x: 70,
+                y: 0,
+                w: 30,
+                h: 30
+            }]);
+            const carLeftSideTexture = new Texture(110, 40, [{
+                x: 10,
+                y: 10,
+                w: 50,
+                h: 30
+            }, {
+                x: 70,
+                y: 10,
+                w: 30,
+                h: 30
+            }]);
+
+            const truckFrontTexture = new Texture(30, 30, [{
+                x: 15,
+                y: 0,
+                w: 10,
+                h: 30
+            }]);
+            const truckRightSideTexture = new Texture(25, 30, [{
+                x: 0,
+                y: 15,
+                w: 10,
+                h: 10
+            }]);
+            const truckLeftSideTexture = new Texture(25, 30, [{
+                x: 0,
+                y: 5,
+                w: 10,
+                h: 10
+            }]);
+
+            const generateLanes = () => [-9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((index) => {
+                const lane = new Lane(index);
+                lane.mesh.position.y = index * positionWidth * zoom;
+                scene.add(lane.mesh);
+                return lane;
+            }).filter((lane) => lane.index >= 0);
+
+            const addLane = () => {
+                const index = lanes.length;
+                const lane = new Lane(index);
+                lane.mesh.position.y = index * positionWidth * zoom;
+                scene.add(lane.mesh);
+                lanes.push(lane);
+            }
+
+            const chicken = new Chicken();
+            scene.add(chicken);
+
+            hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+            scene.add(hemiLight)
+
+            const initialDirLightPositionX = -100;
+            const initialDirLightPositionY = -100;
+            dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            dirLight.position.set(initialDirLightPositionX, initialDirLightPositionY, 200);
+            dirLight.castShadow = true;
+            dirLight.target = chicken;
+            scene.add(dirLight);
+
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            var d = 500;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+
+        // var helper = new THREE.CameraHelper( dirLight.shadow.camera );
+        // var helper = new THREE.CameraHelper( camera );
+        // scene.add(helper)
+
+            backLight = new THREE.DirectionalLight(0x000000, .4);
+            backLight.position.set(200, 200, 50);
+            backLight.castShadow = true;
+            scene.add(backLight)
+
+            const laneTypes = ['car', 'truck', 'forest'];
+            const laneSpeeds = [2, 2.5, 3];
+            const vechicleColors = [0xa52523, 0xbdb638, 0x78b14b];
+            const threeHeights = [20, 45, 60];
+
+            const initaliseValues = () => {
+                lanes = generateLanes()
+
+                currentLane = 0;
+                currentColumn = Math.floor(columns / 2);
+
+                previousTimestamp = null;
+
+                startMoving = false;
+                moves = [];
+                stepStartTimestamp;
+
+                chicken.position.x = 0;
+                chicken.position.y = 0;
+
+                camera.position.y = initialCameraPositionY;
+                camera.position.x = initialCameraPositionX;
+
+                dirLight.position.x = initialDirLightPositionX;
+                dirLight.position.y = initialDirLightPositionY;
+            }
+
+            initaliseValues();
+
+            const renderer = new THREE.WebGLRenderer({
+                alpha: true,
+                antialias: true
+            });
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.LinearToneMapping;
+            renderer.toneMappingExposure = 1;
+            renderer.setSize(1330, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            function Texture(width, height, rects) {
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+                const context = canvas.getContext("2d");
+                context.fillStyle = "#ffffff";
+                context.fillRect(0, 0, width, height);
+                context.fillStyle = "rgba(0,0,0,0.6)";
+                rects.forEach(rect => {
+                    context.fillRect(rect.x, rect.y, rect.w, rect.h);
+                });
+                return new THREE.CanvasTexture(canvas);
+            }
+
+            function Wheel() {
+                const wheel = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(12 * zoom, 33 * zoom, 12 * zoom),
+                    new THREE.MeshLambertMaterial({
+                        color: 0x333333,
+                        flatShading: true
+                    })
+                );
+                wheel.position.z = 6 * zoom;
+                return wheel;
+            }
+
+            function Car() {
+                const car = new THREE.Group();
+                const color = vechicleColors[Math.floor(Math.random() * vechicleColors.length)];
+
+                const main = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(60 * zoom, 30 * zoom, 15 * zoom),
+                    new THREE.MeshPhongMaterial({
+                        color,
+                        flatShading: true
+                    })
+                );
+                main.position.z = 12 * zoom;
+                main.castShadow = true;
+                main.receiveShadow = true;
+                car.add(main)
+
+                const cabin = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(33 * zoom, 24 * zoom, 12 * zoom),
+                    [
+                        new THREE.MeshPhongMaterial({
+                            color: 0xcccccc,
+                            flatShading: true,
+                            map: carBackTexture
+                        }),
+                        new THREE.MeshPhongMaterial({
+                            color: 0xcccccc,
+                            flatShading: true,
+                            map: carFrontTexture
+                        }),
+                        new THREE.MeshPhongMaterial({
+                            color: 0xcccccc,
+                            flatShading: true,
+                            map: carRightSideTexture
+                        }),
+                        new THREE.MeshPhongMaterial({
+                            color: 0xcccccc,
+                            flatShading: true,
+                            map: carLeftSideTexture
+                        }),
+                        new THREE.MeshPhongMaterial({
+                            color: 0xcccccc,
+                            flatShading: true
+                        }),
+                        new THREE.MeshPhongMaterial({
+                            color: 0xcccccc,
+                            flatShading: true
+                        })
+                    ]
+                );
+                cabin.position.x = 6 * zoom;
+                cabin.position.z = 25.5 * zoom;
+                cabin.castShadow = true;
+                cabin.receiveShadow = true;
+                car.add(cabin);
+
+                const frontWheel = new Wheel();
+                frontWheel.position.x = -18 * zoom;
+                car.add(frontWheel);
+
+                const backWheel = new Wheel();
+                backWheel.position.x = 18 * zoom;
+                car.add(backWheel);
+
+                car.castShadow = true;
+                car.receiveShadow = false;
+
+                return car;
+            }
+
+            function Truck() {
+                const truck = new THREE.Group();
+                const color = vechicleColors[Math.floor(Math.random() * vechicleColors.length)];
+
+
+                const base = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(100 * zoom, 25 * zoom, 5 * zoom),
+                    new THREE.MeshLambertMaterial({
+                        color: 0xb4c6fc,
+                        flatShading: true
+                    })
+                );
+                base.position.z = 10 * zoom;
+                truck.add(base)
+
+                const cargo = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(75 * zoom, 35 * zoom, 40 * zoom),
+                    new THREE.MeshPhongMaterial({
+                        color: 0xb4c6fc,
+                        flatShading: true
+                    })
+                );
+                cargo.position.x = 15 * zoom;
+                cargo.position.z = 30 * zoom;
+                cargo.castShadow = true;
+                cargo.receiveShadow = true;
+                truck.add(cargo)
+
+                const cabin = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(25 * zoom, 30 * zoom, 30 * zoom),
+                    [
+                        new THREE.MeshPhongMaterial({
+                            color,
+                            flatShading: true
+                        }),
+                        new THREE.MeshPhongMaterial({
+                            color,
+                            flatShading: true,
+                            map: truckFrontTexture
+                        }),
+                        new THREE.MeshPhongMaterial({
+                            color,
+                            flatShading: true,
+                            map: truckRightSideTexture
+                        }),
+                        new THREE.MeshPhongMaterial({
+                            color,
+                            flatShading: true,
+                            map: truckLeftSideTexture
+                        }),
+                        new THREE.MeshPhongMaterial({
+                            color,
+                            flatShading: true
+                        }),
+                        new THREE.MeshPhongMaterial({
+                            color,
+                            flatShading: true
+                        })
+                    ]
+                );
+                cabin.position.x = -40 * zoom;
+                cabin.position.z = 20 * zoom;
+                cabin.castShadow = true;
+                cabin.receiveShadow = true;
+                truck.add(cabin);
+
+                const frontWheel = new Wheel();
+                frontWheel.position.x = -38 * zoom;
+                truck.add(frontWheel);
+
+                const middleWheel = new Wheel();
+                middleWheel.position.x = -10 * zoom;
+                truck.add(middleWheel);
+
+                const backWheel = new Wheel();
+                backWheel.position.x = 30 * zoom;
+                truck.add(backWheel);
+
+                return truck;
+            }
+
+            function Three() {
+                const three = new THREE.Group();
+
+                const trunk = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(15 * zoom, 15 * zoom, 20 * zoom),
+                    new THREE.MeshPhongMaterial({
+                        color: 0x4d2926,
+                        flatShading: true
+                    })
+                );
+                trunk.position.z = 10 * zoom;
+                trunk.castShadow = true;
+                trunk.receiveShadow = true;
+                three.add(trunk);
+
+                height = threeHeights[Math.floor(Math.random() * threeHeights.length)];
+
+                const crown = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(30 * zoom, 30 * zoom, height * zoom),
+                    new THREE.MeshLambertMaterial({
+                        color: 0x7aa21d,
+                        flatShading: true
+                    })
+                );
+                crown.position.z = (height / 2 + 20) * zoom;
+                crown.castShadow = true;
+                crown.receiveShadow = false;
+                three.add(crown);
+
+                return three;
+            }
+
+            function Chicken() {
+                const chicken = new THREE.Group();
+
+                const chickenHeight = 20 * zoom;
+                const legHeight = chickenHeight * 0.4;
+
+                const horizontalBody = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(chickenSize * zoom - 2, chickenSize * 1.2 * zoom, chickenHeight * 0.5),
+                    new THREE.MeshPhongMaterial({
+                        color: 0xffffff,
+                        flatShading: true
+                    })
+                );
+                horizontalBody.position.z = legHeight + chickenHeight * 0.25;
+                horizontalBody.position.y = chickenSize * -0.4 * zoom;
+                horizontalBody.castShadow = true;
+                horizontalBody.receiveShadow = true;
+                chicken.add(horizontalBody);
+
+                const verticalBody = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(chickenSize * 0.9 * zoom, chickenSize * 0.8 * zoom, chickenHeight * 1),
+                    new THREE.MeshPhongMaterial({
+                        color: 0xffffff,
+                        flatShading: true
+                    })
+                );
+                verticalBody.position.z = legHeight + chickenHeight * 0.55;
+                verticalBody.position.y = -chickenSize * 0.2 * zoom;
+                verticalBody.castShadow = true;
+                verticalBody.receiveShadow = true;
+                chicken.add(verticalBody);
+
+                const leftWing = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(2 * zoom, chickenSize * 0.8 * zoom, chickenHeight * 0.35),
+                    new THREE.MeshPhongMaterial({
+                        color: 0xffffff,
+                        flatShading: true
+                    })
+                );
+                leftWing.position.set(-chickenSize * 0.5 * zoom, -chickenSize * 0.4 * zoom, legHeight + chickenHeight * 0.27);
+                leftWing.castShadow = true;
+                leftWing.receiveShadow = true;
+                chicken.add(leftWing);
+
+                const rightWing = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(2 * zoom, chickenSize * 0.8 * zoom, chickenHeight * 0.35),
+                    new THREE.MeshPhongMaterial({
+                        color: 0xffffff,
+                        flatShading: true
+                    })
+                );
+                rightWing.position.set(chickenSize * 0.5 * zoom, -chickenSize * 0.4 * zoom, legHeight + chickenHeight * 0.27);
+                rightWing.castShadow = true;
+                rightWing.receiveShadow = true;
+                chicken.add(rightWing);
+
+                const leftLeg = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(3 * zoom, 3 * zoom, legHeight),
+                    new THREE.MeshLambertMaterial({
+                        color: 0xe5734f,
+                        flatShading: true
+                    })
+                );
+                leftLeg.position.set(-5 * zoom, -1 * zoom, legHeight / 2);
+                leftLeg.castShadow = true;
+                chicken.add(leftLeg);
+
+                const rightLeg = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(3 * zoom, 3 * zoom, legHeight),
+                    new THREE.MeshLambertMaterial({
+                        color: 0xe5734f,
+                        flatShading: true
+                    })
+                );
+                rightLeg.position.set(5 * zoom, -1 * zoom, legHeight / 2);
+                rightLeg.castShadow = true;
+                chicken.add(rightLeg);
+
+                const leftFootGeometry = new THREE.BoxBufferGeometry(5 * zoom, 7 * zoom, 2 * zoom);
+                leftFootGeometry.translate(0, 3.5 * zoom, 0); // Move geometry up by half height
+                const leftFoot = new THREE.Mesh(
+                    leftFootGeometry,
+                    new THREE.MeshLambertMaterial({
+                        color: 0xe5734f,
+                        flatShading: true
+                    })
+                );
+                leftFoot.position.set(-5 * zoom, 0, 0); // Keep y at 0
+                leftFoot.castShadow = true;
+                chicken.add(leftFoot);
+
+                const rightFootGeometry = new THREE.BoxBufferGeometry(5 * zoom, 7 * zoom, 2 * zoom);
+                rightFootGeometry.translate(0, 3.5 * zoom, 0); // Move geometry up by half height
+                const rightFoot = new THREE.Mesh(
+                    rightFootGeometry,
+                    new THREE.MeshLambertMaterial({
+                        color: 0xe5734f,
+                        flatShading: true
+                    })
+                );
+                rightFoot.position.set(5 * zoom, 0, 0); // Keep y at 0
+                rightFoot.castShadow = true;
+                chicken.add(rightFoot);
+
+                const createToe = (width, length, height) => {
+                    return new THREE.Mesh(
+                        new THREE.BoxBufferGeometry(width * zoom, length * zoom, height * zoom),
+                        new THREE.MeshLambertMaterial({
+                            color: 0xe5734f,
+                            flatShading: true
+                        })
+                    );
+                };
+
+                const leftFrontToe1 = createToe(1.5, 5, 2);
+                leftFrontToe1.position.set(-7 * zoom, 4 * zoom, 0);
+                leftFrontToe1.castShadow = true;
+                chicken.add(leftFrontToe1);
+
+                const leftFrontToe2 = createToe(1.5, 5, 2);
+                leftFrontToe2.position.set(-3 * zoom, 4 * zoom, 0);
+                leftFrontToe2.castShadow = true;
+                chicken.add(leftFrontToe2);
+
+                const leftBackToe = createToe(5, 5, 2);
+                leftBackToe.position.set(-5 * zoom, -4 * zoom, 0);
+                leftBackToe.castShadow = true;
+                chicken.add(leftBackToe);
+
+                const rightFrontToe1 = createToe(1.5, 5, 2);
+                rightFrontToe1.position.set(7 * zoom, 4 * zoom, 0);
+                rightFrontToe1.castShadow = true;
+                chicken.add(rightFrontToe1);
+
+                const rightFrontToe2 = createToe(1.5, 5, 2);
+                rightFrontToe2.position.set(3 * zoom, 4 * zoom, 0);
+                rightFrontToe2.castShadow = true;
+                chicken.add(rightFrontToe2);
+
+                const rightBackToe = createToe(5, 5, 2);
+                rightBackToe.position.set(5 * zoom, -4 * zoom, 0);
+                rightBackToe.castShadow = true;
+                chicken.add(rightBackToe);
+
+                const comb = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(5 * zoom, 8 * zoom, 4 * zoom),
+                    new THREE.MeshLambertMaterial({
+                        color: 0xE4686A,
+                        flatShading: true
+                    })
+                );
+                comb.position.set(0, -3 * zoom, legHeight + chickenHeight + 2 * zoom);
+                comb.castShadow = true;
+                comb.receiveShadow = false;
+                chicken.add(comb);
+
+                const leftEye = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(0.2 * zoom, 2 * zoom, 2 * zoom),
+                    new THREE.MeshLambertMaterial({
+                        color: 0x000000,
+                        flatShading: true
+                    })
+                );
+                leftEye.position.set(-chickenSize * zoom + 15, zoom - 6, legHeight + chickenHeight - 3 * zoom);
+                leftEye.receiveShadow = false;
+                chicken.add(leftEye);
+
+                const rightEye = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(0.2 * zoom, 2 * zoom, 2 * zoom),
+                    new THREE.MeshLambertMaterial({
+                        color: 0x000000,
+                        flatShading: true
+                    })
+                );
+                rightEye.position.set(chickenSize * zoom - 15, zoom - 6, legHeight + chickenHeight - 3 * zoom);
+                rightEye.receiveShadow = false;
+                chicken.add(rightEye);
+
+                const beak = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(4 * zoom, 5 * zoom, 4 * zoom),
+                    new THREE.MeshLambertMaterial({
+                        color: 0xe5734f,
+                        flatShading: true
+                    })
+                );
+                beak.position.set(0, 11, legHeight + chickenHeight - 7 * zoom);
+                beak.castShadow = true;
+                beak.receiveShadow = false;
+                chicken.add(beak);
+
+                const wattle = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(4 * zoom, 3 * zoom, 4 * zoom),
+                    new THREE.MeshLambertMaterial({
+                        color: 0xE4686A,
+                        flatShading: true
+                    })
+                );
+                wattle.position.set(0, 4 * zoom, legHeight + chickenHeight - 10 * zoom);
+                wattle.castShadow = true;
+                wattle.receiveShadow = false;
+                chicken.add(wattle);
+
+                const centerFeather = new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(chickenSize * zoom - 10, 4 * zoom, 10 * zoom),
+                    new THREE.MeshPhongMaterial({
+                        color: 0xffffff,
+                        flatShading: true
+                    })
+                );
+                centerFeather.position.set(0, -chickenSize * 0.96 * zoom, legHeight + chickenHeight - 30);
+                centerFeather.castShadow = true;
+                centerFeather.receiveShadow = true;
+                chicken.add(centerFeather);
+
+                return chicken;
+            }
+
+
+            function Road() {
+                const road = new THREE.Group();
+
+                const createSection = color => new THREE.Mesh(
+                    new THREE.PlaneBufferGeometry(boardWidth * zoom, positionWidth * zoom),
+                    new THREE.MeshPhongMaterial({
+                        color
+                    })
+                );
+
+                const middle = createSection(0x454A59);
+                middle.receiveShadow = true;
+                road.add(middle);
+
+                const left = createSection(0x393D49);
+                left.position.x = -boardWidth * zoom;
+                road.add(left);
+
+                const right = createSection(0x393D49);
+                right.position.x = boardWidth * zoom;
+                road.add(right);
+
+                return road;
+            }
+
+            function Grass() {
+                const grass = new THREE.Group();
+
+                const createSection = color => new THREE.Mesh(
+                    new THREE.BoxBufferGeometry(boardWidth * zoom, positionWidth * zoom, 3 * zoom),
+                    new THREE.MeshPhongMaterial({
+                        color
+                    })
+                );
+
+                const middle = createSection(0xbaf455);
+                middle.receiveShadow = true;
+                grass.add(middle);
+
+                const left = createSection(0x99C846);
+                left.position.x = -boardWidth * zoom;
+                grass.add(left);
+
+                const right = createSection(0x99C846);
+                right.position.x = boardWidth * zoom;
+                grass.add(right);
+
+                grass.position.z = 1 * zoom;
+                return grass;
+            }
+
+            function Lane(index) {
+                this.index = index;
+                this.type = index <= 0 ? 'field' : laneTypes[Math.floor(Math.random() * laneTypes.length)];
+
+                switch (this.type) {
+                    case 'field': {
+                        this.type = 'field';
+                        this.mesh = new Grass();
+                        break;
+                    }
+                    case 'forest': {
+                        this.mesh = new Grass();
+
+                        this.occupiedPositions = new Set();
+                        this.threes = [1, 2, 3, 4].map(() => {
+                            const three = new Three();
+                            let position;
+                            do {
+                                position = Math.floor(Math.random() * columns);
+                            } while (this.occupiedPositions.has(position))
+                            this.occupiedPositions.add(position);
+                            three.position.x = (position * positionWidth + positionWidth / 2) * zoom - boardWidth * zoom / 2;
+                            this.mesh.add(three);
+                            return three;
+                        })
+                        break;
+                    }
+                    case 'car': {
+                        this.mesh = new Road();
+                        this.direction = Math.random() >= 0.5;
+
+                        const occupiedPositions = new Set();
+                        this.vechicles = [1, 2, 3].map(() => {
+                            const vechicle = new Car();
+                            let position;
+                            do {
+                                position = Math.floor(Math.random() * columns / 2);
+                            } while (occupiedPositions.has(position))
+                            occupiedPositions.add(position);
+                            vechicle.position.x = (position * positionWidth * 2 + positionWidth / 2) * zoom - boardWidth * zoom / 2;
+                            if (!this.direction) vechicle.rotation.z = Math.PI;
+                            this.mesh.add(vechicle);
+                            return vechicle;
+                        })
+
+                        this.speed = laneSpeeds[Math.floor(Math.random() * laneSpeeds.length)];
+                        break;
+                    }
+                    case 'truck': {
+                        this.mesh = new Road();
+                        this.direction = Math.random() >= 0.5;
+
+                        const occupiedPositions = new Set();
+                        this.vechicles = [1, 2].map(() => {
+                            const vechicle = new Truck();
+                            let position;
+                            do {
+                                position = Math.floor(Math.random() * columns / 3);
+                            } while (occupiedPositions.has(position))
+                            occupiedPositions.add(position);
+                            vechicle.position.x = (position * positionWidth * 3 + positionWidth / 2) * zoom - boardWidth * zoom / 2;
+                            if (!this.direction) vechicle.rotation.z = Math.PI;
+                            this.mesh.add(vechicle);
+                            return vechicle;
+                        })
+
+                        this.speed = laneSpeeds[Math.floor(Math.random() * laneSpeeds.length)];
+                        break;
+                    }
+                }
+            }
+
+            document.querySelector("#retry").addEventListener("click", () => {
+                lanes.forEach(lane => scene.remove(lane.mesh));
+                initaliseValues();
+                collisionDetected = false;
+                chicken.scale.z = 1;
+                endDOM.style.visibility = 'hidden';
+            });
+
+            document.getElementById('crossyStartBtn').addEventListener("click", () => {
+                document.getElementById('crossyStartBtn').style.backgroundColor = 'green';
+                document.getElementById('crossyStartBtn').innerHTML = 'Go!';
+
+                document.getElementById('forward').addEventListener("click", () => move('forward'));
+                document.getElementById('backward').addEventListener("click", () => move('backward'));
+                document.getElementById('left').addEventListener("click", () => move('left'));
+                document.getElementById('right').addEventListener("click", () => move('right'));
+
+                window.addEventListener("keydown", event => {
+                    if (event.keyCode == '38' || event.key == 'w') {
+                        move('forward');
+                    } else if (event.keyCode == '40' || event.key == 's') {
+                        move('backward');
+                    } else if (event.keyCode == '37' || event.key == 'a') {
+                        move('left');
+                    } else if (event.keyCode == '39' || event.key == 'd') {
+                        move('right');
+                    }
+                });
+            });
+
+            function move(direction) {
+                if (collisionDetected) return;
+
+                const finalPositions = moves.reduce((position, move) => {
+                    if (move === 'forward') return {
+                        lane: position.lane + 1,
+                        column: position.column
+                    };
+                    if (move === 'backward') return {
+                        lane: position.lane - 1,
+                        column: position.column
+                    };
+                    if (move === 'left') return {
+                        lane: position.lane,
+                        column: position.column - 1
+                    };
+                    if (move === 'right') return {
+                        lane: position.lane,
+                        column: position.column + 1
+                    };
+                }, {
+                    lane: currentLane,
+                    column: currentColumn
+                });
+
+                if (direction === 'forward') {
+                    if (lanes[finalPositions.lane + 1].type === 'forest' && lanes[finalPositions.lane + 1].occupiedPositions.has(finalPositions.column)) return;
+                    if (!stepStartTimestamp) startMoving = true;
+                    addLane();
+                } else if (direction === 'backward') {
+                    if (finalPositions.lane === 0) return;
+                    if (lanes[finalPositions.lane - 1].type === 'forest' && lanes[finalPositions.lane - 1].occupiedPositions.has(finalPositions.column)) return;
+                    if (!stepStartTimestamp) startMoving = true;
+                } else if (direction === 'left') {
+                    if (finalPositions.column === 0) return;
+                    if (lanes[finalPositions.lane].type === 'forest' && lanes[finalPositions.lane].occupiedPositions.has(finalPositions.column - 1)) return;
+                    if (!stepStartTimestamp) startMoving = true;
+                } else if (direction === 'right') {
+                    if (finalPositions.column === columns - 1) return;
+                    if (lanes[finalPositions.lane].type === 'forest' && lanes[finalPositions.lane].occupiedPositions.has(finalPositions.column + 1)) return;
+                    if (!stepStartTimestamp) startMoving = true;
+                }
+                moves.push(direction);
+            }
+
+
+            function animate(timestamp) {
+                requestAnimationFrame(animate);
+
+                if (!previousTimestamp) previousTimestamp = timestamp;
+                const delta = timestamp - previousTimestamp;
+                previousTimestamp = timestamp;
+
+                lanes.forEach(lane => {
+                    if (lane.type === 'car' || lane.type === 'truck') {
+                        const aBitBeforeTheBeginingOfLane = -boardWidth * zoom / 2 - positionWidth * 2 * zoom;
+                        const aBitAfterTheEndOFLane = boardWidth * zoom / 2 + positionWidth * 2 * zoom;
+                        lane.vechicles.forEach(vechicle => {
+                            if (lane.direction) {
+                                vechicle.position.x = vechicle.position.x < aBitBeforeTheBeginingOfLane ? aBitAfterTheEndOFLane : vechicle.position.x -= lane.speed / 16 * delta;
+                            } else {
+                                vechicle.position.x = vechicle.position.x > aBitAfterTheEndOFLane ? aBitBeforeTheBeginingOfLane : vechicle.position.x += lane.speed / 16 * delta;
+                            }
+                        });
+                    }
+                });
+
+                if (startMoving) {
+                    stepStartTimestamp = timestamp;
+                    startMoving = false;
+                }
+
+                if (stepStartTimestamp) {
+                    const moveDeltaTime = timestamp - stepStartTimestamp;
+                    const moveDeltaDistance = Math.min(moveDeltaTime / stepTime, 1) * positionWidth * zoom;
+                    const jumpDeltaDistance = Math.sin(Math.min(moveDeltaTime / stepTime, 1) * Math.PI) * 8 * zoom;
+                    switch (moves[0]) {
+                        case 'forward': {
+                            chicken.rotation.z = 0;
+                            const positionY = currentLane * positionWidth * zoom + moveDeltaDistance;
+                            camera.position.y = initialCameraPositionY + positionY;
+                            dirLight.position.y = initialDirLightPositionY + positionY;
+                            chicken.position.y = positionY;
+                            chicken.position.z = jumpDeltaDistance;
+                            break;
+                        }
+                        case 'backward': {
+                            chicken.rotation.z = Math.PI;
+                            const positionY = currentLane * positionWidth * zoom - moveDeltaDistance;
+                            camera.position.y = initialCameraPositionY + positionY;
+                            dirLight.position.y = initialDirLightPositionY + positionY;
+                            chicken.position.y = positionY;
+                            chicken.position.z = jumpDeltaDistance;
+                            break;
+                        }
+                        case 'left': {
+                            chicken.rotation.z = Math.PI / 2;
+                            const positionX = (currentColumn * positionWidth + positionWidth / 2) * zoom - boardWidth * zoom / 2 - moveDeltaDistance;
+                            camera.position.x = initialCameraPositionX + positionX;
+                            dirLight.position.x = initialDirLightPositionX + positionX;
+                            chicken.position.x = positionX;
+                            chicken.position.z = jumpDeltaDistance;
+                            break;
+                        }
+                        case 'right': {
+                            chicken.rotation.z = -Math.PI / 2;
+                            const positionX = (currentColumn * positionWidth + positionWidth / 2) * zoom - boardWidth * zoom / 2 + moveDeltaDistance;
+                            camera.position.x = initialCameraPositionX + positionX;
+                            dirLight.position.x = initialDirLightPositionX + positionX;
+                            chicken.position.x = positionX;
+                            chicken.position.z = jumpDeltaDistance;
+                            break;
+                        }
+                    }
+                    if (moveDeltaTime > stepTime) {
+                        switch (moves[0]) {
+                            case 'forward': {
+                                currentLane++;
+                                counterDOM.innerHTML = currentLane;
+                                break;
+                            }
+                            case 'backward': {
+                                currentLane--;
+                                counterDOM.innerHTML = currentLane;
+                                break;
+                            }
+                            case 'left': {
+                                currentColumn--;
+                                break;
+                            }
+                            case 'right': {
+                                currentColumn++;
+                                break;
+                            }
+                        }
+                        moves.shift();
+                        stepStartTimestamp = moves.length === 0 ? null : timestamp;
+                    }
+                }
+
+                if (lanes[currentLane].type === 'car' || lanes[currentLane].type === 'truck') {
+                    const chickenMinX = chicken.position.x - chickenSize * zoom / 2;
+                    const chickenMaxX = chicken.position.x + chickenSize * zoom / 2;
+                    const vehicleLength = {
+                        car: 60,
+                        truck: 105
+                    } [lanes[currentLane].type];
+                    lanes[currentLane].vechicles.forEach(vehicle => {
+                        const carMinX = vehicle.position.x - vehicleLength * zoom / 2;
+                        const carMaxX = vehicle.position.x + vehicleLength * zoom / 2;
+                        if (chickenMaxX > carMinX && chickenMinX < carMaxX) {
+                            collisionDetected = true;
+                            endDOM.style.visibility = 'visible';
+                            chicken.scale.z = 0.1;
+                        }
+                    });
+                }
+
+                renderer.render(scene, camera);
+            }
+
+            requestAnimationFrame(animate);
+        </script>
+        </div>
+    {% endif %}
+    {% if game %}
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => {
+                    window.scrollTo(0, document.body.scrollHeight);
+                }, 100);
+            });
+            
+            window.addEventListener("keydown", function(e) {
+                if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.code) > -1) {
+                    e.preventDefault();
+                }
+            }, false);
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === "Escape") {
+                    if (confirm("Are you sure you want to quit!") == true) {
+                        const response = fetch('/game_over');
+                        if (!response.ok) {
+                            localStorage.setItem("game-over", '1');
+                            window.location.href = '/';
+                        }
+                    }
+                }
+            });
+        </script>
+    {% endif %}
+    <script type="text/babel" src="{{ url_for('static', filename='js/MusicPlayer.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.2/babel.min.js" integrity="sha512-E93kfMJX6tlvTH0N0TmwNePkccFJAz+Lw8A2N+YDkHgKQazBZrM/XgdLoZKfnm5+vjEPkua04/KhqQZm/zbEJQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+{% endblock %}

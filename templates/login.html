@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Log In
+{% endblock %}
+
+{% block main %}
+    <form action="/login" method="post">
+        <div class="mb-3">
+            <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name="username" placeholder="Username" type="text">
+        </div>
+        <div class="mb-3">
+            <input class="form-control mx-auto w-auto" name="password" placeholder="Password" type="password">
+        </div>
+        <button class="btn btn-primary" type="submit">Log In</button>
+    </form>
+    <br>
+    <hr>
+    <h4>Welcome to Study Buddy!</h4>
+    <p>The <strong>ultimate productivity</strong> tool, allowing you to <strong>study</strong> and <strong>learn</strong> in peace to the <strong>best of your ability</strong>.</p>
+    <p>Allowing you to make <strong>to do lists</strong>, take <strong>notes</strong>, set <strong>pomodoro timers</strong>, listen to <strong>brown noise/binaural beats</strong> (proven to increase attention spans) and <strong>block access</strong> to apps such as youtube</p>
+    <p>Also for more important occassions you can enable <strong>focus mode</strong>, this <strong>blocks all</strong> social media sites and notifications and reminds you of your goals when you're trying to close the app or switch to another.</p>
+{% endblock %}

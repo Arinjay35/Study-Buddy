@@ -1,0 +1,131 @@
+{% extends "layout.html" %}
+
+{% block main %}
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-6 text-center">Your Study Journey</h1>
+
+    <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white shadow-md rounded-lg p-6 text-center">
+                <div class="text-4xl font-bold text-blue-600">{{ total_sessions }}</div>
+                <div class="text-gray-600">Total Study Sessions</div>
+            </div>
+
+        <!-- Total Time Card -->
+            <div class="bg-white shadow-md rounded-lg p-6 text-center">
+                <div class="text-4xl font-bold text-green-600">
+                    {{ total_hours }}h {{ total_minutes }}m
+                </div>
+                <div class="text-gray-600">Total Study Time</div>
+            </div>
+
+        <!-- Completed Tasks Card -->
+            <div class="bg-white shadow-md rounded-lg p-6 text-center">
+                <div class="text-4xl font-bold text-purple-600">{{ total_tasks_completed }}</div>
+                <div class="text-gray-600">Tasks Completed</div>
+            </div>
+
+        <!-- Completed Purchases Ca</div>rd -->   
+            <div class="bg-white shadow-md rounded-lg p-6 text-center">
+                <div class="text-4xl font-bold text-red-600">{{ purchases }}</div>
+                <div class="text-gray-600">No. Of Game Purchases</div>
+            </div>
+        </div>
+
+    <!-- Study Sessions Table -->
+        <h2 class="text-2xl font-semibold mb-4">Recent Study Sessions</h2>
+        {% if sessions and sessions|length > 0 %}
+            <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session Start</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session End</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time Spent</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed Tasks</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes (Summarised)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 text-dark">
+                        {% for session in sessions %}
+                            <tr class="hover:bg-gray-50 transition duration-150">
+                                <td class="px-4 py-4">{{ session.session_start }}</td>
+                                <td class="px-4 py-4">{{ session.session_end }}</td>
+                                <td class="px-4 py-4">
+                                    {{ session.time_spent|int // 3600 }}h
+                                    {{ session.time_spent|int % 3600 // 60 }}m
+                                    {{ session.time_spent|int % 60 }}s
+                                </td>
+                                <td class="px-4 py-4">
+                                    {% if session.completed_tasks and session.completed_tasks|length > 0 %}
+                                        <ul class="list-disc list-inside">
+                                            {% for task in session.completed_tasks %}
+                                                <li>{{ task }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <span class="text-gray-500">No tasks completed</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-4">
+                                    {% if session.summarized_notes %}
+                                        {% set notes = session.summarized_notes.split('=====') %}
+                                        {% for note in notes %}
+                                            {% if note.strip() %}
+                                                {{ note|truncate(50) }}
+                                                {% if not loop.last %}<hr class="my-2">{% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        <button onclick="showNotesModal(this)" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm ml-2">
+                                            Read More
+                                        </button>
+                                        <div class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 10" id="modal-{{loop.index}}">
+                                            <div class="relative top-10 mx-auto p-5 border max-w shadow-lg rounded-md bg-white" style="max-height: 80vh; overflow-y: auto;">
+                                                <div class="mt-3">
+                                                    <h3 class="text-lg font-medium text-gray-900 mb-2">Session Notes</h3>
+                                                    <div class="mt-2 px-7 py-3 text-left">
+                                                        {% for note in notes %}
+                                                            {% if note.strip() %}
+                                                                <div class="note-entry mb-4">
+                                                                    <h4 class="text-gray-900 font-semibold">Note {{ loop.index }}</h4>
+                                                                    <p class="text-gray-700 whitespace-pre-line">{{ note }}</p>
+                                                                    {% if not loop.last %}<hr class="my-4">{% endif %}
+                                                                </div>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </div>
+                                                    <div class="mt-4">
+                                                        <button onclick="hideNotesModal(this)" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                                                            Close
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-gray-500">No notes available</span>
+                                    {% endif %}
+                                </td>
+                                <script>
+                                    function showNotesModal(button) {
+                                        const modal = button.nextElementSibling;
+                                        modal.classList.remove('hidden');
+                                    }
+                                    
+                                    function hideNotesModal(button) {
+                                        const modal = button.closest('[id^="modal-"]');
+                                        modal.classList.add('hidden');
+                                    }
+                                </script>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="bg-white shadow-md rounded-lg p-6 text-center text-gray-500">
+                No study sessions recorded yet. Start studying to track your progress!
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

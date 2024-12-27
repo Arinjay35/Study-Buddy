@@ -1,0 +1,126 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Store
+{% endblock %}
+
+{% block main %}
+    <div class="container">
+        <h1>Game Store</h1>
+        <h5>Use the cash you got by completing tasks to buy and use games for a limited time</h5>
+        <hr><br>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        Crossy Road
+                    </div>
+                    <div class="card-body">
+                        <p>Price: 35 cash per 10 minutes</p>
+                        <form action="/purchase_game" method="post">
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">Minutes</span>
+                                <input type="number" class="form-control" name="minutes" min="1" max="25" required>
+                                <input type="hidden" name="game" value="Crossy Road">
+                                <button class="btn btn-primary" type="submit">Buy</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        Flappy Bird
+                    </div>
+                    <div class="card-body">
+                        <p>Price: 30 cash per 10 minutes</p>
+                        <form action="/purchase_game" method="post">
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">Minutes</span>
+                                <input type="number" class="form-control" name="minutes" min="1" max="25" required>
+                                <input type="hidden" name="game" value="Flappy Bird">
+                                <button class="btn btn-primary" type="submit">Buy</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        Snake
+                    </div>
+                    <div class="card-body">
+                        <p>Price: 25 cash per 10 minutes</p>
+                        <form action="/purchase_game" method="post">
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">Minutes</span>
+                                <input type="number" class="form-control" name="minutes" min="1" max="25" required>
+                                <input type="hidden" name="game" value="Snake">
+                                <button class="btn btn-primary" type="submit">Buy</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        Gorilla Bomb
+                    </div>
+                    <div class="card-body">
+                        <p>Price: 45 cash per 10 minutes</p>
+                        <form action="/purchase_game" method="post">
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">Minutes</span>
+                                <input type="number" class="form-control" name="minutes" min="1" max="25" required>
+                                <input type="hidden" name="game" value="Gorilla Game">
+                                <button class="btn btn-primary" type="submit">Buy</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        Parallax Aviation
+                    </div>
+                    <div class="card-body">
+                        <p>Price: 40 cash per 10 minutes</p>
+                        <form action="/purchase_game" method="post">
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">Minutes</span>
+                                <input type="number" class="form-control" name="minutes" min="1" max="25" required>
+                                <input type="hidden" name="game" value="Aviator">
+                                <button class="btn btn-primary" type="submit">Buy</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        Astray
+                    </div>
+                    <div class="card-body">
+                        <p>Price: 40 cash per 10 minutes</p>
+                        <form action="/purchase_game" method="post">
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">Minutes</span>
+                                <input type="number" class="form-control" name="minutes" min="1" max="25" required>
+                                <input type="hidden" name="game" value="Astray">
+                                <button class="btn btn-primary" type="submit">Buy</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
