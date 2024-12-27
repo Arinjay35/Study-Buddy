@@ -9,6 +9,7 @@ from flask_apscheduler import APScheduler
 from apscheduler.jobstores.base import JobLookupError
 from flask_session import Session
 from datetime import datetime, timedelta
+from waitress import serve
 from werkzeug.security import check_password_hash, generate_password_hash
 import google.generativeai as genai
 import json
@@ -1117,4 +1118,8 @@ def summarize_endpoint():
             'error': 'Summarization failed',
             'details': str(e)
         }), 500
+
+
+if __name__ == "__main__":
+    serve(app, host='127.0.0.1', port=5000)
     
