@@ -91,7 +91,9 @@
                                            {% elif task.priority == 1 %} text-bg-danger
                                            {% elif task.priority == 2 %} text-bg-warning
                                            {% elif task.priority == 3 %} text-bg-light
-                                           {% endif %}" data-task-timer="{{ task.timer or '' }}">
+                                           {% endif %}" data-task-timer="{{ task.timer or '' }}"
+                                           data-priority="{{ task.priority }}"
+                                           data-task-id="{{ task.task_id }}">
                                     <span class="{% if task.completed %}text-decoration-line-through{% endif %}">
                                         {{ task.text }}
                                         {% if task.timer %}
@@ -677,7 +679,7 @@
                 const timerElement = document.querySelector(`.timer-countdown[data-task-id="${taskId}"]`);
                 const taskItem = document.querySelector(`[data-task-id="${taskId}"]`).closest('li');
                 const totalSeconds = totalMinutes * 60;
-                const priority = parseInt(document.getElementById('taskPriority').value);
+                //const priority = parseInt(document.getElementById('taskPriority').value);
                 let remainingSeconds = totalSeconds;
 
                 const interval = setInterval(() => {
@@ -704,7 +706,7 @@
                 const taskText = newTaskInput.value.trim();
                 const priority = parseInt(document.getElementById('taskPriority').value);
                 const timer = taskTimerInput.value ? parseInt(taskTimerInput.value) : null;
-
+            
                 if (taskText) {
                     fetch('/add_task', {
                         method: 'POST',
@@ -717,24 +719,33 @@
                             timer: timer
                         })
                     })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                location.reload();
-                            } else {
-                                alert('Failed to add task.');
-                            }
-                        })
-                        .catch(error => console.error('Error adding task:', error));
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Create the task item with priority data attribute
+                            const taskList = document.getElementById('taskList');
+                            const li = document.createElement('li');
+                            li.dataset.priority = priority; // Add this line
+                            // ... rest of the task item creation
+                            location.reload();
+                        } else {
+                            alert('Failed to add task.');
+                        }
+                    })
+                    .catch(error => console.error('Error adding task:', error));
                 }
             }
 
             function toggleTaskCompletion(taskId) {
                 const taskItem = document.querySelector(`[data-task-id="${taskId}"]`).closest('li');
                 const hasTimer = taskItem.dataset.taskTimer;
-            // Get the task's actual priority from the data attribute instead of the form
-                const priority = parseInt(taskItem.dataset.priority || 0);
+                const priority = parseInt(taskItem.dataset.priority); // Remove the || 0
                 const isCurrentlyCompleted = taskItem.classList.contains('text-bg-success');
+
+                console.log(`Task ID: ${taskId}`);
+                console.log(`Priority: ${priority}`);
+                console.log(`Is Currently Completed: ${isCurrentlyCompleted}`);
+
 
             // If task has a timer, check if it's still active
                 if (hasTimer && activeTimers[taskId]) {
